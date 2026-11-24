@@ -3,7 +3,7 @@ import {useFonts} from 'expo-font';
 import {Ionicons} from '@expo/vector-icons';
 import {LinearGradient} from 'expo-linear-gradient';
 import {AppBackground} from '../components/layout/AppBackground';
-import {ActivityIndicator, FlatList, PanResponder, Pressable, StyleSheet, Text, TextInput, View} from 'react-native';
+import {ActivityIndicator, Alert, FlatList, PanResponder, Pressable, StyleSheet, Text, TextInput, View} from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {StatusBar} from 'expo-status-bar';
 
@@ -11,8 +11,12 @@ import {useFocusEffect} from '@react-navigation/native';
 
 import {BottomNav} from '../components/navigation/BottomNav';
 
-import {deleteSavedItem, getSavedItems} from '../services/savedItems';
+import {deleteSavedItem, getSavedItems, setSavedItemPinned, sortSavedItems} from '../services/savedItems';
 import {savedTextFontFamily} from '../services/savedTextTypography';
+import {shareSavedItem} from '../services/contentSharing';
+import {ContentContextMenu} from '../components/share/ContentContextMenu';
+import {showShareFeedback} from '../services/shareFeedback';
+import {openDailyQuoteSource} from '../services/dailyQuoteNavigation';
 
 import {colors, radius, spacing} from '../theme';
 import {useLanguage} from '../context/LanguageContext';
@@ -36,12 +40,14 @@ const isPonomarPreview = item => savedTextFontFamily(item) === 'Ponomar';
 
 export const FavoritesScreen = ({route, navigation}) => {
   const uiScale = useInterfaceScale();
-  const {t} = useLanguage();
+  const {language,t} = useLanguage();
+  const cslFont = language === 'csl_traditional' ? {fontFamily:'Ponomar',fontWeight:'400'} : null;
   const initialTab = TABS.some((tab) => tab.key === route.params?.tab)
     ? route.params.tab
     : TAB_SAVED;
 
   const [items, setItems] = useState([]);
+  const [contextItem,setContextItem]=useState(null);
   const [search, setSearch] = useState('');
   const [ponomarLoaded] = useFonts({
     FavoritesPonomar: require('../../assets/fonts/Ponomar-Regular.ttf'),
@@ -127,14 +133,41 @@ export const FavoritesScreen = ({route, navigation}) => {
     },
   }), []);
 
+  const togglePin = async item => {
+    const next=!item.is_pinned;
+    try {
+      const updated=await setSavedItemPinned(item.id,next);
+      setItems(current=>sortSavedItems(current.map(candidate=>
+        candidate.id===item.id?updated:candidate)));
+    } catch(error) {
+      console.warn('[favorites] toggle pin:',error?.message||error);
+      Alert.alert(t('favoritesExtra.pinFailed'),error?.message||t('favoritesExtra.retry'));
+    }
+  };
+
   const removeItem = async (itemId) => {
     try {
       await deleteSavedItem(itemId);
-
       setItems((current) => current.filter((item) => item.id !== itemId));
     } catch (err) {
-      console.log('Ошибка удаления сохранения:', err);
+      console.warn('[favorites] delete:', err?.message || err);
+      showShareFeedback({
+        title: t('favoritesExtra.deleteFailed'),
+        message: err?.message || t('favoritesExtra.retry'),
+      });
     }
+  };
+
+  const confirmRemoveItem = item => {
+    if (!item) return;
+    const title = String(item.item_title || item.source_title || t('favoritesExtra.saving'));
+    showShareFeedback({
+      title: t('favoritesExtra.deleteQuestion'),
+      message: t('favoritesExtra.deleteDescription',{title:title.slice(0,100)}),
+      cancelLabel: t('favoritesExtra.cancel'),
+      confirmLabel: t('favoritesExtra.delete'),
+      onConfirm: () => removeItem(item.id),
+    });
   };
 
   const makeFocusTarget = (item) => ({
@@ -197,10 +230,20 @@ export const FavoritesScreen = ({route, navigation}) => {
       return;
     }
 
+    if (item.source_type === 'bible' && item.anchor_type === 'bible_book') {
+      navigation.push('BibleBook', {
+        bookId:metadata.book_id||item.source_id,
+        translationCode:metadata.translation_code||'rst',
+      });
+      return;
+    }
+
     if (item.source_type === 'bible' && metadata.chapter_number) {
       navigation.push('BibleChapter', {
         bookId: metadata.book_id || item.source_id,
         chapterNumber: Number(metadata.chapter_number),
+        translationCode: metadata.translation_code ||
+          (metadata.language === 'traditional' ? 'csl_traditional' : 'rst'),
         focusTarget,
       });
       return;
@@ -225,8 +268,17 @@ export const FavoritesScreen = ({route, navigation}) => {
       return;
     }
 
+    if (item.source_type === 'hours' && (metadata.entry_id||metadata.entryId)) {
+      navigation.push('HoursReading',{
+        entryId:metadata.entry_id||metadata.entryId,
+      });
+      return;
+    }
+
     if (item.source_type === 'daily_quote') {
-      navigation.navigate('Menu');
+      // Return to the actual Bible passage, not to the Home quote card.
+      // Patristic sayings without an in-app book have no fake destination.
+      openDailyQuoteSource(navigation, {...metadata, target: metadata.quote_target});
       return;
     }
 
@@ -236,7 +288,8 @@ export const FavoritesScreen = ({route, navigation}) => {
           kathismaNumber: metadata.kathisma_number,
           kathismaTitle:
             metadata.kathisma_title || t('psalter.kathisma', {number: metadata.kathisma_number}),
-          focusTarget,
+          focusTarget:{...focusTarget,
+            preferredLanguage:metadata.reader_mode||metadata.language||undefined},
         });
         return;
       }
@@ -287,7 +340,7 @@ export const FavoritesScreen = ({route, navigation}) => {
       <View style={styles.screen}>
         <View style={[styles.headerRow, {paddingTop: insets.top + 2}]}>
           <View style={styles.headerTitleBlock}>
-            <Text style={[styles.headerTitle, {fontSize: 21 * uiScale}]} numberOfLines={1}>{t('favorites.title')}</Text>
+            <Text style={[styles.headerTitle, {fontSize: 21 * uiScale},cslFont]} numberOfLines={1}>{t('favorites.title')}</Text>
             <View style={styles.headerOrnament}>
               <View style={styles.headerLine} />
               <Text style={styles.headerStar}>✦</Text>
@@ -297,7 +350,7 @@ export const FavoritesScreen = ({route, navigation}) => {
           <View style={styles.searchField}>
             <Ionicons name="search-outline" size={17} color={colors.accent} />
             <TextInput
-              style={styles.searchInput}
+              style={[styles.searchInput,cslFont]}
               value={search}
               onChangeText={setSearch}
               placeholder={t('favorites.searchPlaceholder')}
@@ -338,7 +391,7 @@ export const FavoritesScreen = ({route, navigation}) => {
                     pressed && styles.pressed,
                   ]}
                 >
-                  <Text style={[styles.tabText, {fontSize: 12 * uiScale}, active && styles.tabTextActive]}>
+                  <Text style={[styles.tabText, {fontSize: (language==='csl_traditional' ? 14 : 12) * uiScale}, active && styles.tabTextActive,cslFont]}>
                     {t(tab.labelKey)}
                   </Text>
                   {!!tabCount(tab.key) && (
@@ -373,30 +426,43 @@ export const FavoritesScreen = ({route, navigation}) => {
             ListEmptyComponent={
               <View style={styles.emptyCard}>
                 <Text style={styles.emptyHeart}>{emptyCopy.icon}</Text>
-                <Text style={[styles.emptyTitle, {fontSize: 19 * uiScale}]}>{emptyCopy.title}</Text>
-                {!!emptyCopy.text && <Text style={[styles.emptyText, {fontSize: 14 * uiScale}]}>{emptyCopy.text}</Text>}
+                <Text style={[styles.emptyTitle, {fontSize: 19 * uiScale},cslFont]}>{emptyCopy.title}</Text>
+                {!!emptyCopy.text && <Text style={[styles.emptyText, {fontSize: 14 * uiScale},cslFont]}>{emptyCopy.text}</Text>}
               </View>
             }
             renderItem={({item}) => (
               <View style={styles.card}>
                 <View style={styles.cardTop}>
-                  <Text style={styles.typeBadge}>
+                  <Text style={[styles.typeBadge,cslFont]}>
                     {activeTab === TAB_PLACES
                       ? t('favorites.bookmark')
-                      : (item.save_type_display || item.save_type).toUpperCase()}
+                      : item.source_type==='bible' && item.anchor_type==='bible_book'
+                        ? t('favoritesExtra.book')
+                        : t('favoritesExtra.'+({quote:'quote',fragment:'fragment',word:'fragment',sentence:'fragment',paragraph:'fragment',chapter:'chapter',bookmark:'bookmark',prayer:'prayer'}[item.save_type]||'unknownType')).toUpperCase()}
                   </Text>
 
-                  <Pressable
-                    hitSlop={8}
-                    onPress={() => removeItem(item.id)}
-                    style={({pressed}) => [styles.deleteButton, pressed && styles.pressed]}
-                  >
-                    <Text style={styles.deleteText}>{t('favorites.delete')}</Text>
-                  </Pressable>
+                  <View style={styles.cardTopActions}>
+                    {!!item.is_pinned && (
+                      <Ionicons name="pin" size={15} color="#A64D33"
+                        accessibilityLabel={t('favoritesExtra.pinned')} />
+                    )}
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={t('favoritesExtra.actions')}
+                      accessibilityHint={t('favoritesExtra.actionsHint')}
+                      hitSlop={9}
+                      onPress={() => setContextItem(item)}
+                      style={({pressed}) => [styles.menuButton, pressed && styles.pressed]}
+                    >
+                      <Ionicons name="ellipsis-vertical" size={18} color="#785D48" />
+                    </Pressable>
+                  </View>
                 </View>
 
                 <Pressable
                   onPress={() => openItem(item)}
+                  onLongPress={() => setContextItem(item)}
+                  delayLongPress={340}
                   style={({pressed}) => [styles.cardBody, pressed && styles.pressed]}
                 >
                   <Text style={[styles.cardTitle, {fontSize: 17 * uiScale}]}>{getItemTitle(item)}</Text>
@@ -445,12 +511,27 @@ export const FavoritesScreen = ({route, navigation}) => {
         </View>
 
         <BottomNav navigation={navigation} active="favorites" />
+        <ContentContextMenu
+          visible={!!contextItem}
+          title={contextItem ? getItemTitle(contextItem) : ''}
+          onClose={()=>setContextItem(null)}
+          onOpen={contextItem ? ()=>openItem(contextItem) : null}
+          onShare={contextItem ? ()=>shareSavedItem(contextItem) : null}
+          onPin={contextItem ? ()=>togglePin(contextItem) : null}
+          pinned={!!contextItem?.is_pinned}
+          onDelete={contextItem ? ()=>confirmRemoveItem(contextItem) : null}
+        />
       </View>
     </AppBackground>
   );
 };
 
 const styles = StyleSheet.create({
+  cardTopActions:{flexDirection:'row',alignItems:'center',gap:6},
+  menuButton:{minWidth:32,minHeight:32,alignItems:'center',justifyContent:'center',
+    borderRadius:9,borderWidth:1,borderColor:'#DEC7A4',
+    backgroundColor:'rgba(255,248,235,0.72)'},
+
   screen: {
     flex: 1,
     backgroundColor: 'transparent',
@@ -664,16 +745,6 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     letterSpacing: 0.8,
     color: colors.accent,
-  },
-
-  deleteButton: {
-    paddingVertical: 4,
-    paddingHorizontal: 4,
-  },
-
-  deleteText: {
-    fontSize: 11,
-    color: colors.textMuted,
   },
 
   cardBody: {

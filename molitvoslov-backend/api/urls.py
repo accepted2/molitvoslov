@@ -35,6 +35,13 @@ from .auth_views import (
     LogoutView,
     DeleteAccountView,
 )
+from .account_preferences import AccountPreferencesView
+from .account_deletion_web import account_deletion_page, privacy_policy_page
+from .content_share import public_share_page
+from .shared_invitations import (
+    create_shared_invitation, preview_shared_invitation,
+    import_shared_invitation, revoke_shared_invitation,
+)
 from .mobile_content import MobileContentView
 from .bible_content import BibleContentView
 from .content_updates import OfflineContentUpdatesView, OfflineContentObjectView, OfflineContentManifestView
@@ -90,6 +97,14 @@ router.register(
 )
 
 urlpatterns = [
+    path("share/", public_share_page, name="public-content-share"),
+    path("shared/create/", create_shared_invitation, name="shared-create"),
+    path("shared/<str:token>/", preview_shared_invitation, name="shared-preview"),
+    path("shared/<str:token>/import/", import_shared_invitation, name="shared-import"),
+    path("shared/<str:token>/revoke/", revoke_shared_invitation, name="shared-revoke"),
+    path("account-deletion/", account_deletion_page, name="account-deletion-web"),
+    path("privacy-policy/", privacy_policy_page, name="privacy-policy"),
+    path("account-preferences/", AccountPreferencesView.as_view(), name="account-preferences"),
     path("mobile-content/", MobileContentView.as_view(), name="mobile-content"),
     path("content-updates/", OfflineContentUpdatesView.as_view(), name="content-updates"),
     path("content-updates/manifest/", OfflineContentManifestView.as_view(), name="content-update-manifest"),

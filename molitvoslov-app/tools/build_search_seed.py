@@ -299,6 +299,26 @@ def main():
             add(lang, "prayers", identifier, title, source,
                 [chosen[1]], route, kind="prayer",
                 preview=chosen[1], text_language="church")
+        # MOLITVOSLOV_FILARET_DAILY_PRAYER_SEARCH_V1
+        # Russian-only text cannot enter the Slavonic-only canonical prayer
+        # queue above. Index this exact source prayer by its Russian wording.
+        for filaret in text_objs:
+            if filaret.get("slug") != "ezhednevnaya-molitva-svyatitelya-filareta-drozdova":
+                continue
+            body = (filaret.get("translation") or "").strip()
+            if (not body or len(body) < 450 or filaret.get("content")):
+                raise RuntimeError("Unexpected St Philaret text/language in offline corpus")
+            category_slugs = {
+                c.get("slug") for c in filaret.get("categories") or []
+                if isinstance(c, dict)
+            }
+            if "raznye-molitvy" not in category_slugs:
+                raise RuntimeError("St Philaret prayer is no longer in Misc Prayers")
+            add(lang, "prayers", "text:" + str(filaret["id"]),
+                filaret.get("title") or "Ежедневная молитва святителя Филарета",
+                "Молитвы", [body],
+                {"name": "Reader", "params": {"slug": filaret["slug"]}},
+                kind="prayer", preview=body, text_language="russian")
         for psalter in content.get("psalters", {}).get("list", [])[:1]:
             add(lang, "psalter", f"psalter:{psalter.get('id')}", psalter.get("name") or "Псалтирь",
                 "Псалтирь", [psalter.get("description"), psalter.get("prayers_before"),

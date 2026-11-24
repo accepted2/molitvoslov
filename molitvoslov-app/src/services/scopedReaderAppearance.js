@@ -44,6 +44,10 @@ export const getScopedAppearanceKey = async ({sourceType, sourceId}) =>
   PREFIX + ':' + (await ownerScope()) + ':' +
   encodeURIComponent(String(sourceType || 'reader')) + ':' +
   encodeURIComponent(String(sourceId || ''));
+const defaultForScope = (settings, sourceType, defaultFontSize) =>
+  defaultFontSize && Number(settings.fontSize) === DEFAULT_READING_SETTINGS.fontSize
+    ? {...settings, fontSize: defaultFontSize}
+    : settings;
 export const loadScopedAppearance = async (scope) => {
   const key = await getScopedAppearanceKey(scope);
   const globalSettings = await getReadingSettings().catch(() => DEFAULT_READING_SETTINGS);
@@ -63,7 +67,9 @@ export const loadScopedAppearance = async (scope) => {
   ));
   return {
     key,
-    value: inherited ? normalizeReaderAppearance(globalSettings)
+    value: inherited
+      ? normalizeReaderAppearance(defaultForScope(
+        globalSettings, scope.sourceType, scope.defaultFontSize))
       : normalizeReaderAppearance({...globalSettings, ...saved}),
     inherited,
   };
@@ -79,13 +85,15 @@ export const storeScopedAppearance = async (key, appearance) => {
   const scope = cloudScopeFromKey(key);
   if (scope) queueAccountPreferencePatch({reader_overrides: {[scope]: value}}).catch(console.warn);
 };
-export const resetScopedAppearance = async (key) => {
+export const resetScopedAppearance = async (key, scope = {}) => {
   if (key) {
     await AsyncStorage.removeItem(key);
     const scope = cloudScopeFromKey(key);
     if (scope) queueAccountPreferencePatch({reader_overrides: {[scope]: null}}).catch(console.warn);
   }
-  return normalizeReaderAppearance(await getReadingSettings().catch(() => DEFAULT_READING_SETTINGS));
+  const settings = await getReadingSettings().catch(() => DEFAULT_READING_SETTINGS);
+  return normalizeReaderAppearance(defaultForScope(
+    settings, scope.sourceType, scope.defaultFontSize));
 };
 /** Apply theme and text size without flattening the liturgical color hierarchy.
  * In every reader, prayer headings are brown, Russian translation is secondary,
@@ -132,7 +140,9 @@ export const applyReaderAppearance = (webView, appearance, isRule = false) => {
     "root.style.setProperty('--liturgical',s.rubric);" +
     "root.style.setProperty('--reading-font-size',s.size+'px');" +
     "root.style.setProperty('--traditional-reading-font-size',s.traditional+'px');" +
-    "var css='body {background:'+s.background+' !important;color:'+s.text+' !important;} " +
+    // The Bible book owns its page texture and --book-paper color variables.
+    // Never overwrite that background with the generic reader's !important rule.
+    "var css='body:not(.book-mode) {background:'+s.background+' !important;color:'+s.text+' !important;} " +
     selector + "{font-size:'+s.size+'px !important;color:'+s.text+' !important;} " +
     traditional + "{font-size:'+s.traditional+'px !important;} " +
     headings + "{color:var(--accent-dark) !important;} " +

@@ -1,4 +1,7 @@
 import * as SecureStore from 'expo-secure-store';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import {getDatabase} from '../db/database';
+import * as FileSystem from 'expo-file-system/legacy';
 
 // Both Dev Client and release use the deployed Django API by default.
 // A local Django server may still be explicitly selected for development
@@ -191,6 +194,7 @@ export const logoutFromBackend = async () => {
 
 
 export const deleteBackendAccount = async () => {
+  const user=await getCachedBackendUser();
   const response = await authenticatedFetch('/api/auth/delete-account/', {
     method: 'POST',
     body: JSON.stringify({confirmation: 'DELETE'}),
@@ -199,6 +203,59 @@ export const deleteBackendAccount = async () => {
     const data = await response.json().catch(() => ({}));
     throw new Error(data.detail || `Не удалось удалить аккаунт (${response.status})`);
   }
-  await SecureStore.deleteItemAsync(API_TOKEN_KEY);
-  await SecureStore.deleteItemAsync(API_USER_KEY);
+  // The server has successfully deleted the identity and all owned records.
+  // Never re-sync a tombstone or stale offline copy into a different account.
+  let localClean=true;
+  try {
+    if(user?.id){
+      const db=await getDatabase();
+      // Only delete files that belong to this app's sandbox; never touch a
+      // user's original gallery files referenced by content:// or external URIs.
+      const photos=await db.getAllAsync(
+        `SELECT local_uri FROM memorial_photos WHERE cloud_user_id = ?
+         UNION ALL
+         SELECT local_uri FROM personal_prayer_photos WHERE cloud_user_id = ?`,
+        [user.id,user.id]
+      );
+      const roots=[FileSystem.documentDirectory,FileSystem.cacheDirectory]
+        .filter(value=>typeof value==='string'&&value.startsWith('file://'));
+      let photoClean=true;
+      for(const photo of photos) {
+        const uri=photo?.local_uri;
+        if(typeof uri!=='string'||!roots.some(root=>uri.startsWith(root)))continue;
+        try {
+          await FileSystem.deleteAsync(uri,{idempotent:true});
+        } catch(error) {
+          photoClean=false;
+          console.warn('[account] private cached photo:',error?.message||error);
+        }
+      }
+      await db.withTransactionAsync(async ()=>{
+        for(const table of [
+          'saved_items','reading_progress','memorial_books','memorial_photos',
+          'personal_prayer_books','personal_prayers',
+          'personal_prayer_book_items','personal_prayer_photos',
+        ]) {
+          await db.runAsync(`DELETE FROM ${table} WHERE cloud_user_id = ?`,[user.id]);
+        }
+      });
+      const keys=await AsyncStorage.getAllKeys();
+      const accountId=String(user.id);
+      const localKeys=keys.filter(key=>
+        key === '@molitvoslov/account-prefs-pending/v1:'+accountId ||
+        key === '@molitvoslov/account-prefs-last-scopes/v1:'+accountId ||
+        key === '@molitvoslov/home-category-order/v1:account-'+accountId ||
+        key.includes(':account-'+encodeURIComponent(accountId)+':')
+      );
+      if(localKeys.length)await AsyncStorage.multiRemove(localKeys);
+      if(!photoClean)localClean=false;
+    }
+  } catch(error) {
+    localClean=false;
+    console.warn('[account] cloud deleted; local cleanup incomplete:',error?.message||error);
+  } finally {
+    await SecureStore.deleteItemAsync(API_TOKEN_KEY);
+    await SecureStore.deleteItemAsync(API_USER_KEY);
+  }
+  return {localClean};
 };

@@ -153,7 +153,13 @@ def merge_languages(by_lang):
             for lang, d in (("ru", a), ("uk", b)):
                 if d:
                     d = dict(d)
-                    d["lang"] = lang
+                    # Preserve the old calendar fallback: a feast available
+                    # only in the Russian index must remain searchable with
+                    # the Ukrainian locale. When an entry has a distinct
+                    # Ukrainian counterpart under the SAME ext, keep the
+                    # localized records separate instead of hiding it.
+                    d["lang"] = "" if (lang == "ru" and b is None
+                                       and d["grp"] == "calendar") else lang
                     d["title_uk"] = None
                     out.append(d)
     return out

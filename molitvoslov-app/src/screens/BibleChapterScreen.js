@@ -6,6 +6,10 @@ import {StatusBar} from 'expo-status-bar';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import SelectableDocumentReader from '../components/reader/SelectableDocumentReader';
 import {ReaderBookmarkMenu} from '../components/reader/ReaderBookmarkMenu';
+import {ReaderAppearanceSheet} from '../components/reader/ReaderAppearanceSheet';
+import {useScopedReaderAppearance} from '../hooks/useScopedReaderAppearance';
+import {resolveReaderAppearance,isDarkReaderBackground} from '../services/scopedReaderAppearance';
+import {shareContent, documentShareText} from '../services/contentSharing';
 import {BibleCrossReferencesSheet} from '../components/reader/BibleCrossReferencesSheet';
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
 import {useReadingProgress} from '../hooks/useReadingProgress';
@@ -70,7 +74,15 @@ const stripInlineLectionaryMarkers = (value) =>
 export const BibleChapterScreen = ({route, navigation}) => {
   const {t} = useLanguage();
   useBibleContentGeneration();
-  const {bookId, chapterNumber, focusTarget = null, resume = false} = route.params || {};
+  const {bookId, chapterNumber, focusTarget = null, verseNumber, resume = false} = route.params || {};
+  // Links shared from a selected verse provide a stable chapter/verse address,
+  // not database IDs that can change when offline Bible data is rebuilt.
+  const sharedVerse=Number(verseNumber);
+  const requestedFocusTarget=useMemo(() => focusTarget ||
+    (Number.isInteger(sharedVerse) && sharedVerse>=1 && sharedVerse<=250
+      ? {anchor_type:'bible_verse',metadata:{
+          chapter_number:Number(chapterNumber),verse_number:sharedVerse,
+        }} : null),[focusTarget,sharedVerse,chapterNumber]);
   const calendarPassageRanges = route.params?.calendarPassageRanges || null;
   const translationCode = route.params?.translationCode === 'csl_traditional'
     ? 'csl_traditional'
@@ -101,10 +113,21 @@ export const BibleChapterScreen = ({route, navigation}) => {
     Number(requestedChapter?.number || 1)
   );
   const [bookmarkFeedback, setBookmarkFeedback] = useState('');
-  const [fontPanelVisible, setFontPanelVisible] = useState(false);
+  const [appearanceSheetVisible, setAppearanceSheetVisible] = useState(false);
+  const [currentBookmarkAnchor,setCurrentBookmarkAnchor] = useState(null);
+  const [currentBookmarkOffset,setCurrentBookmarkOffset] = useState(0);
+  // BIBLE_BOOK_GLOBAL_COUNTER_TOGGLE_BOOKMARK_20261117: global pagination for the entire loaded Bible book.
+  const [bookPageProgress,setBookPageProgress] = useState({index:null,total:null});
+  const bookmarkActionBusyRef = useRef(false);
+  // Refresh only the native bookmark icon, never rebuild all Bible verses.
+  const [,refreshBookmarkIcon] = useState(0);
   const [crossReferenceOrigin, setCrossReferenceOrigin] = useState(null);
-  const [readerFontSize, setReaderFontSize] = useState(18);
-  const [readerTheme, setReaderTheme] = useState('paper');
+  const {appearance,appearanceReady,changeAppearance,resetAppearance} =
+    useScopedReaderAppearance('bible',book?.code || bookId,
+      isTraditional ? 19 : null);
+  const readerPalette=resolveReaderAppearance(appearance);
+  const isDarkTheme=isDarkReaderBackground(readerPalette.background);
+  const readerTheme=isDarkTheme?'night':'paper';
   const bookmarkFeedbackTimerRef = useRef(null);
 
   const insets = useSafeAreaInsets();
@@ -154,6 +177,12 @@ export const BibleChapterScreen = ({route, navigation}) => {
     setCurrentChapterNumber(Number(requestedChapter?.number || 1));
   }, [bookId, requestedChapter?.number]);
 
+  // Recomputing pagination in another book/translation must not briefly show
+  // the previous book's total. Font/palette updates will report a new total.
+  useEffect(() => {
+    setBookPageProgress({index:null,total:null});
+  }, [bookId, translationCode]);
+
   useEffect(
     () => () => {
       if (bookmarkFeedbackTimerRef.current) {
@@ -164,12 +193,8 @@ export const BibleChapterScreen = ({route, navigation}) => {
   );
 
   useEffect(() => {
-    readerRef.current?.setBookFontSize(readerFontSize);
-  }, [readerFontSize]);
-
-  useEffect(() => {
-    readerRef.current?.setBookTheme(readerTheme);
-  }, [readerTheme]);
+    readerRef.current?.applyBookAppearance(appearance);
+  }, [appearance]);
 
   useFocusEffect(
     React.useCallback(() => {
@@ -203,20 +228,20 @@ export const BibleChapterScreen = ({route, navigation}) => {
   }, [chapters]);
 
   const normalizedFocusTarget = useMemo(() => {
-    if (!focusTarget) return null;
+    if (!requestedFocusTarget) return null;
 
-    const anchorType = focusTarget.anchor_type || focusTarget.anchorType;
+    const anchorType = requestedFocusTarget.anchor_type || requestedFocusTarget.anchorType;
     if (anchorType !== 'bible_verse' && anchorType !== 'bible_chapter') {
-      return focusTarget;
+      return requestedFocusTarget;
     }
 
-    const metadata = focusTarget.metadata || {};
+    const metadata = requestedFocusTarget.metadata || {};
     const targetChapter = bibleContent.getChapter(
       bookId,
       metadata.chapter_number || chapterNumber,
       translationCode
     );
-    if (!targetChapter) return focusTarget;
+    if (!targetChapter) return requestedFocusTarget;
 
     // Search seed rows can have old verse IDs after Bible content refreshes.
     // Rebuild the anchor from the stable book/chapter/verse address.
@@ -225,12 +250,12 @@ export const BibleChapterScreen = ({route, navigation}) => {
       : (targetChapter.verses || []).find((item) =>
           Number(item.number) === Number(metadata.verse_number)
         ) || (targetChapter.verses || []).find((item) =>
-          Number(item.id) === Number(focusTarget.anchor_id ?? focusTarget.anchorId)
+          Number(item.id) === Number(requestedFocusTarget.anchor_id ?? requestedFocusTarget.anchorId)
         );
-    if (!verse) return focusTarget;
+    if (!verse) return requestedFocusTarget;
 
     return {
-      ...focusTarget,
+      ...requestedFocusTarget,
       anchor_type: 'bible_verse',
       anchor_id: Number(verse.id),
       metadata: {
@@ -244,7 +269,7 @@ export const BibleChapterScreen = ({route, navigation}) => {
         ? {start_offset: null, end_offset: null}
         : {}),
     };
-  }, [focusTarget, bookId, chapterNumber, translationCode]);
+  }, [requestedFocusTarget, bookId, chapterNumber, translationCode]);
 
   const chapterStartTarget = useMemo(() => {
     if (normalizedFocusTarget || resume || !requestedChapter) {
@@ -340,6 +365,8 @@ export const BibleChapterScreen = ({route, navigation}) => {
 
           chapter_id: chapterId,
 
+          translation_code: translationCode,
+
           chapter_number: Number(chapter.number),
 
           verse_count: (chapter.verses || []).length,
@@ -388,6 +415,10 @@ export const BibleChapterScreen = ({route, navigation}) => {
       description: '',
 
       readerMode: 'book',
+
+      // BIBLE_CONTINUOUS_COLUMNS_PAGINATION_20261117: split long Bible verses across page boundaries by CSS
+      // columns without duplicating a single DOM verse or its text offsets.
+      bookFlowColumns: true,
 
       progressOffsetMode: 'page',
 
@@ -516,6 +547,16 @@ export const BibleChapterScreen = ({route, navigation}) => {
       return;
     }
 
+    // The book-mode WebView paginates all chapters, not just the open one.
+    const pageIndex=progress.pageIndex;
+    const pageCount=progress.pageCount;
+    if(Number.isInteger(pageIndex)&&Number.isInteger(pageCount)&&
+       pageIndex>=0&&pageCount>0){
+      const index=Math.min(pageIndex,pageCount-1);
+      setBookPageProgress(old=>old.index===index&&old.total===pageCount
+        ?old:{index,total:pageCount});
+    }
+
     const current = verseInfo.byId.get(Number(progress.anchorId));
 
     if (!current) {
@@ -525,6 +566,11 @@ export const BibleChapterScreen = ({route, navigation}) => {
     setCurrentChapterNumber((previous) =>
       previous === current.chapterNumber ? previous : current.chapterNumber
     );
+    setCurrentBookmarkAnchor(old=>old===Number(progress.anchorId)
+      ? old:Number(progress.anchorId));
+    const offset=Math.max(0,Number(progress.offset||0));
+    // BIBLE_COLUMN_WIDTH_GUARDS_20261117: track every page turn for the icon.
+    setCurrentBookmarkOffset(old=>old===offset?old:offset);
 
     scheduleSave({
       ...progress,
@@ -596,27 +642,17 @@ export const BibleChapterScreen = ({route, navigation}) => {
         book_short_name: book.short_name,
         chapter_number: verse.chapterNumber,
         verse_number: verse.verseNumber,
+        bookmark_page_count: bookPageProgress.total,
       },
     };
   };
 
   const applyReaderAppearance = () => {
-    readerRef.current?.setBookFontSize(readerFontSize);
-    readerRef.current?.setBookTheme(readerTheme);
+    readerRef.current?.applyBookAppearance(appearance);
   };
 
-  const changeFontSize = (delta) => {
-    setReaderFontSize((current) =>
-      Math.max(14, Math.min(22, Math.round((current + delta) * 2) / 2))
-    );
-  };
-
-  const toggleReaderTheme = () => {
-    setReaderTheme((current) => (current === 'night' ? 'paper' : 'night'));
-    setFontPanelVisible(false);
-  };
-
-  const addCurrentBookmark = async () => {
+  const toggleCurrentBookmark = async () => {
+    if(bookmarkActionBusyRef.current)return;
     let position = getCurrentProgress() || getStableProgress();
 
     if (!position?.anchorId) {
@@ -644,12 +680,39 @@ export const BibleChapterScreen = ({route, navigation}) => {
       return;
     }
 
+    bookmarkActionBusyRef.current=true;
     try {
-      const result = await saveReadingBookmark(bookmark);
+      const existing=savedItemsRef.current.find(item=>
+        item.save_type==='bookmark' &&
+        item.anchor_type===position.anchorType &&
+        Number(item.anchor_id)===Number(position.anchorId) &&
+        Number(item.metadata?.bookmark_offset||0)===Math.max(0,Number(position.offset||0)) &&
+        (!Number(item.metadata?.bookmark_page_count||0)||
+          !Number(bookPageProgress.total||0)||
+          Number(item.metadata.bookmark_page_count)===Number(bookPageProgress.total))
+      );
+      if(existing){
+        await deleteSavedItem(existing.id);
+        savedItemsRef.current=savedItemsRef.current.filter(item=>item.id!==existing.id);
+        refreshBookmarkIcon(value=>value+1);
+        showBookmarkFeedback('Закладка снята');
+        return;
+      }
+
+      const result=await saveReadingBookmark(bookmark);
+      const saved=result?.item;
+      if(saved && !savedItemsRef.current.some(item=>item.id===saved.id)){
+        savedItemsRef.current=[saved,...savedItemsRef.current];
+        refreshBookmarkIcon(value=>value+1);
+      }
+      setCurrentBookmarkAnchor(Number(position.anchorId));
+      setCurrentBookmarkOffset(Math.max(0,Number(position.offset||0)));
       showBookmarkFeedback(result.created ? 'Закладка добавлена' : 'Закладка уже есть');
-    } catch (error) {
-      console.log('Ошибка добавления закладки Библии:', error.message);
-      showBookmarkFeedback('Не удалось добавить закладку');
+    }catch(error){
+      console.log('Ошибка изменения закладки Библии:',error?.message||error);
+      showBookmarkFeedback('Не удалось изменить закладку');
+    }finally{
+      bookmarkActionBusyRef.current=false;
     }
   };
 
@@ -768,6 +831,17 @@ export const BibleChapterScreen = ({route, navigation}) => {
   const bookmarkVerse = bookmarkPosition
     ? verseInfo.byId.get(Number(bookmarkPosition.anchorId))
     : null;
+  const displayedBookmarkAnchor=Number(currentBookmarkAnchor ||
+    (savedProgress?.anchorId ?? savedProgress?.anchor_id) || 0);
+  const isCurrentPlaceBookmarked=savedItemsRef.current.some(item=>
+    item.save_type==='bookmark' &&
+    item.anchor_type==='bible_verse' &&
+    Number(item.anchor_id)===displayedBookmarkAnchor &&
+    Number(item.metadata?.bookmark_offset||0)===Number(currentBookmarkOffset||0) &&
+    (!Number(item.metadata?.bookmark_page_count||0)||
+      !Number(bookPageProgress.total||0)||
+      Number(item.metadata.bookmark_page_count)===Number(bookPageProgress.total))
+  );
 
   const bookmarkConfig =
     book && bookmarkPosition && bookmarkVerse ? buildBookmarkConfig(bookmarkPosition) : null;
@@ -780,7 +854,7 @@ export const BibleChapterScreen = ({route, navigation}) => {
     );
   }
 
-  if (savedLoading || !progressReady) {
+  if (savedLoading || !progressReady || !appearanceReady) {
     return (
       <View style={styles.center}>
         <ActivityIndicator size="large" color={colors.accent} />
@@ -789,7 +863,7 @@ export const BibleChapterScreen = ({route, navigation}) => {
   }
 
   return (
-    <View style={[styles.screen, readerTheme === 'night' && styles.screenNight]}>
+    <View style={[styles.screen, {backgroundColor: readerPalette.background}]}>
       <StatusBar
         style={readerTheme === 'night' ? 'light' : 'dark'}
         translucent
@@ -804,7 +878,8 @@ export const BibleChapterScreen = ({route, navigation}) => {
         topContentInset={readerTopInset}
         bottomContentInset={readerBottomInset}
         respectBottomSafeArea={false}
-        backgroundColor={readerTheme === 'night' ? '#171310' : '#FBF0D9'}
+        backgroundColor={readerPalette.background}
+        initialAppearance={appearance}
         onProgress={handleProgress}
         onAction={handleAction}
         onCrossReference={openCrossReferences}
@@ -824,6 +899,12 @@ export const BibleChapterScreen = ({route, navigation}) => {
       />
 
       <ReaderBookmarkMenu
+        onShare={() => shareContent({
+          title:displayName+' · Глава '+currentChapterNumber,
+          linkOnly:true,
+          screen:'BibleChapter',params:{bookId,chapterNumber:currentChapterNumber,
+            translationCode},
+        })}
         visible={readerMenuVisible}
         onClose={() => setReaderMenuVisible(false)}
         navigation={navigation}
@@ -845,6 +926,17 @@ export const BibleChapterScreen = ({route, navigation}) => {
           readerRef.current?.goToProgress(stablePosition);
           setReaderMenuVisible(false);
         }}
+        appearance={appearance}
+        onAppearanceChange={changeAppearance}
+        onAppearanceReset={resetAppearance}
+        openBookmarksLabel="Открыть все закладки"
+      />
+      <ReaderAppearanceSheet
+        visible={appearanceSheetVisible}
+        onClose={()=>setAppearanceSheetVisible(false)}
+        appearance={appearance}
+        onChange={changeAppearance}
+        onReset={resetAppearance}
       />
 
       <FixedSectionHeader
@@ -865,64 +957,15 @@ export const BibleChapterScreen = ({route, navigation}) => {
         </View>
       )}
 
-      {fontPanelVisible && (
-        <View
-          style={[
-            styles.fontPanel,
-            readerTheme === 'night' && styles.fontPanelNight,
-            {
-              bottom: 58 + Math.max(insets.bottom, 7),
-            },
-          ]}
-        >
-          <Pressable
-            disabled={readerFontSize <= 14}
-            onPress={() => changeFontSize(-1)}
-            style={({pressed}) => [
-              styles.fontPanelButton,
-              readerTheme === 'night' && styles.fontPanelButtonNight,
-              readerFontSize <= 14 && styles.toolbarButtonDisabled,
-              pressed && readerFontSize > 14 && styles.toolbarPressed,
-            ]}
-          >
-            <Text
-              style={[
-                styles.fontPanelButtonText,
-                readerTheme === 'night' && styles.fontPanelTextNight,
-              ]}
-            >
-              A−
-            </Text>
-          </Pressable>
-
-          <Text
-            style={[styles.fontPanelValue, readerTheme === 'night' && styles.fontPanelTextNight]}
-          >
-            {readerFontSize.toFixed(1)}
-          </Text>
-
-          <Pressable
-            disabled={readerFontSize >= 22}
-            onPress={() => changeFontSize(1)}
-            style={({pressed}) => [
-              styles.fontPanelButton,
-              readerTheme === 'night' && styles.fontPanelButtonNight,
-              readerFontSize >= 22 && styles.toolbarButtonDisabled,
-              pressed && readerFontSize < 22 && styles.toolbarPressed,
-            ]}
-          >
-            <Text
-              style={[
-                styles.fontPanelButtonText,
-                readerTheme === 'night' && styles.fontPanelTextNight,
-              ]}
-            >
-              A+
-            </Text>
-          </Pressable>
-        </View>
-      )}
-
+      {/* BIBLE_BOOK_GLOBAL_COUNTER_TOGGLE_BOOKMARK_20261117: number is across all chapters of this book, not this chapter. */}
+      <View style={[styles.bookPageCounter,readerTheme==='night' && styles.bookPageCounterNight]}>
+        <Text numberOfLines={1} style={[styles.bookPageCounterText,readerTheme==='night' && styles.bookPageCounterTextNight]}>
+          {bookPageProgress.total
+            ? 'Страница '+(bookPageProgress.index+1)+' из '+bookPageProgress.total+
+              '  ·  Осталось '+Math.max(0,bookPageProgress.total-bookPageProgress.index-1)
+            : ' '}
+        </Text>
+      </View>
       <View
         style={[
           styles.bookToolbar,
@@ -957,12 +1000,13 @@ export const BibleChapterScreen = ({route, navigation}) => {
 
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Добавить закладку"
-          onPress={addCurrentBookmark}
+          accessibilityLabel={isCurrentPlaceBookmarked?'Снять закладку':'Добавить закладку'}
+          accessibilityState={{selected:isCurrentPlaceBookmarked}}
+          onPress={toggleCurrentBookmark}
           style={({pressed}) => [styles.toolbarIconButton, pressed && styles.toolbarPressed]}
         >
           <Ionicons
-            name="bookmark-outline"
+            name={isCurrentPlaceBookmarked?'bookmark':'bookmark-outline'}
             size={20}
             color={readerTheme === 'night' ? '#E0C39B' : '#55351F'}
           />
@@ -971,10 +1015,10 @@ export const BibleChapterScreen = ({route, navigation}) => {
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Настройки шрифта"
-          onPress={() => setFontPanelVisible((visible) => !visible)}
+          onPress={() => setAppearanceSheetVisible(true)}
           style={({pressed}) => [
             styles.toolbarIconButton,
-            fontPanelVisible && styles.toolbarIconButtonActive,
+            appearanceSheetVisible && styles.toolbarIconButtonActive,
             pressed && styles.toolbarPressed,
           ]}
         >
@@ -985,8 +1029,8 @@ export const BibleChapterScreen = ({route, navigation}) => {
 
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Сменить тему чтения"
-          onPress={toggleReaderTheme}
+          accessibilityLabel="Выбор цветовой темы чтения"
+          onPress={() => setAppearanceSheetVisible(true)}
           style={({pressed}) => [
             styles.toolbarIconButton,
             readerTheme === 'night' && styles.toolbarIconButtonActiveNight,
@@ -994,7 +1038,7 @@ export const BibleChapterScreen = ({route, navigation}) => {
           ]}
         >
           <Ionicons
-            name={readerTheme === 'night' ? 'sunny-outline' : 'moon-outline'}
+            name="color-palette-outline"
             size={20}
             color={readerTheme === 'night' ? '#E0C39B' : '#55351F'}
           />
@@ -1059,6 +1103,28 @@ const styles = StyleSheet.create({
     color: colors.liturgical,
   },
 
+  bookPageCounter: {
+    height: 19,
+    paddingHorizontal: 12,
+    alignItems:'center',
+    justifyContent:'center',
+    backgroundColor:'#F7E9CF',
+    borderTopWidth:StyleSheet.hairlineWidth,
+    borderTopColor:'rgba(120, 78, 41, 0.16)',
+  },
+  bookPageCounterNight: {
+    backgroundColor:'#1D1713',
+    borderTopColor:'rgba(218, 185, 143, 0.14)',
+  },
+  bookPageCounterText: {
+    fontSize:11,
+    lineHeight:16,
+    color:'#765238',
+    textAlign:'center',
+  },
+  bookPageCounterTextNight: {
+    color:'#D8C1A6',
+  },
   bookToolbar: {
     minHeight: 58,
     paddingTop: 7,

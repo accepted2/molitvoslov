@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "database_name": "molitvoslov_search_v10_2c135bbaabebcde1.db",
-  "seed_sha256": "2c135bbaabebcde15b69dfb7f2b75c471cdcde8e73ec30dc930af455348c77f3",
-  "public_content_version": "ccd3c849c19abc3cc74eb5922a13a2e0e49c4212da0c0286f32fd480fc78d021",
+  "database_name": "molitvoslov_search_v10_c653ae4feff585d5.db",
+  "seed_sha256": "c653ae4feff585d5c932c25757f6d0acc43acf3ec4d1029008c9f0e5b98529fa",
+  "public_content_version": "601159684469c6d18705139f7f7fd97d943ba21c62c7665ab41312e6cfbd21c8",
   "bible_content_version": "d6032d9dc642f5e38925bdb73fd28dc4e4eaefee18942f2be2aa6f26f813fc12"
 }

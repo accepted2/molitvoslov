@@ -1,5 +1,6 @@
-import React, {useCallback, useState} from 'react';
+import React, {useCallback, useRef, useState} from 'react';
 import {FlatList, ImageBackground, Pressable, StyleSheet, Text, View} from 'react-native';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import {LinearGradient} from 'expo-linear-gradient';
 import {useFocusEffect} from '@react-navigation/native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
@@ -13,6 +14,12 @@ import {getReadingProgress} from '../services/readingProgress';
 import {getBibleArtwork} from '../data/bibleArtwork';
 import {homeArtwork} from '../data/homeArtwork';
 import {colors} from '../theme';
+import {ContentContextMenu} from '../components/share/ContentContextMenu';
+import {shareContent} from '../services/contentSharing';
+import {deleteSavedItem, getSavedItems} from '../services/savedItems';
+import {findSavedBibleBook, findSavedBibleChapter,
+  bibleChapterText, saveBibleBook, saveBibleChapter} from '../services/bibleListFavorites';
+import {showShareFeedback} from '../services/shareFeedback';
 import {useLanguage} from '../context/LanguageContext';
 import {bibleUiText, isTraditionalBible, traditionalBibleTextStyle, formatBibleNumber} from '../services/bibleUi';
 
@@ -28,6 +35,10 @@ export const BibleBookScreen = ({route, navigation}) => {
   const book = bibleContent.getBook(route.params?.bookId, translationCode);
 
   const [bookProgress, setBookProgress] = useState(null);
+  const [savedBible,setSavedBible] = useState([]);
+  const saveLocks=useRef(new Set());
+  const [contextChapter,setContextChapter] = useState(null);
+  const [bookContextVisible,setBookContextVisible] = useState(false);
 
   const displayName = bibleContent.getDisplayName(book, translationCode);
   const artwork = getBibleArtwork(book);
@@ -61,6 +72,58 @@ export const BibleBookScreen = ({route, navigation}) => {
       loadProgress();
     }, [loadProgress])
   );
+
+  useFocusEffect(useCallback(() => {
+    let active=true;
+    if(book?.id){
+      getSavedItems({source_type:'bible',source_id:book.id})
+        .then(items=>{if(active)setSavedBible(items);})
+        .catch(error=>console.warn('[bible chapter list] saved:',error?.message||error));
+    }else{
+      setSavedBible([]);
+    }
+    return ()=>{active=false;};
+  },[book?.id,translationCode]));
+
+  const toggleBookSaved=async()=>{
+    if(!book || saveLocks.current.has('book'))return;
+    saveLocks.current.add('book');
+    try{
+      const old=findSavedBibleBook(savedBible,book,translationCode);
+      if(old){
+        await deleteSavedItem(old.id);
+        setSavedBible(items=>items.filter(item=>item.id!==old.id));
+      }else{
+        const saved=await saveBibleBook({book,translationCode,title:displayName});
+        setSavedBible(items=>[saved,...items]);
+      }
+    }catch(error){
+      showShareFeedback({title:'Не удалось сохранить книгу',
+        message:error?.message||'Попробуйте ещё раз.'});
+    }finally{saveLocks.current.delete('book');}
+  };
+
+  const toggleChapterSaved=async(chapter)=>{
+    if(!book || !chapter)return;
+    const key='chapter:'+chapter.id;
+    if(saveLocks.current.has(key))return;
+    saveLocks.current.add(key);
+    try{
+      const old=findSavedBibleChapter(savedBible,book,chapter,translationCode);
+      if(old){
+        await deleteSavedItem(old.id);
+        setSavedBible(items=>items.filter(item=>item.id!==old.id));
+      }else{
+        const saved=await saveBibleChapter({
+          book,chapter,translationCode,title:displayName,
+        });
+        setSavedBible(items=>[saved,...items]);
+      }
+    }catch(error){
+      showShareFeedback({title:'Не удалось сохранить главу',
+        message:error?.message||'Попробуйте ещё раз.'});
+    }finally{saveLocks.current.delete(key);}
+  };
 
   if (!book) {
     return (
@@ -225,45 +288,89 @@ export const BibleBookScreen = ({route, navigation}) => {
             </View>
           }
           renderItem={({item}) => {
-            const isCurrent = !!bookProgress && Number(item.number) === progressChapter;
-
+            const isCurrent=!!bookProgress && Number(item.number)===progressChapter;
+            const isSaved=!!findSavedBibleChapter(savedBible,book,item,translationCode);
             return (
-              <Pressable
-                onPress={() => openChapter(item)}
-                style={({pressed}) => [
-                  styles.chapter,
-
-                  artwork?.background && styles.chapterArtwork,
-
-                  isCurrent && styles.chapterCurrent,
-
-                  artwork?.background && isCurrent && styles.chapterCurrentArtwork,
-
-                  pressed && styles.pressed,
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.chapterNumber,
-
-                    artwork?.background && styles.chapterNumberArtwork,
-
-                    isCurrent && styles.chapterNumberCurrent,
-                    isTraditional && traditionalBibleTextStyle,
-                  ]}
+              <View style={[
+                styles.chapter,
+                artwork?.background && styles.chapterArtwork,
+                isCurrent && styles.chapterCurrent,
+                artwork?.background && isCurrent && styles.chapterCurrentArtwork,
+              ]}>
+                <Pressable
+                  onPress={() => openChapter(item)}
+                  onLongPress={() => setContextChapter(item)}
+                  delayLongPress={340}
+                  accessibilityRole="button"
+                  accessibilityLabel={ui('chapter',t('bible.chapter',{number:item.number}),
+                    {number:item.number})}
+                  style={({pressed}) => [styles.chapterOpen,pressed && styles.pressed]}
                 >
-                  {formatBibleNumber(translationCode, item.number)}
-                </Text>
-
-                {isCurrent && <View style={styles.currentDot} />}
-              </Pressable>
+                  <Text style={[
+                    styles.chapterNumber,
+                    artwork?.background && styles.chapterNumberArtwork,
+                    isTraditional && traditionalBibleTextStyle,
+                    isTraditional && styles.chapterNumberChurch,
+                    isCurrent && styles.chapterNumberCurrent,
+                  ]}>
+                    {formatBibleNumber(translationCode,item.number)}
+                  </Text>
+                  {isCurrent && <View style={styles.currentDot}/>}
+                  {isSaved && <Ionicons name="heart" size={10} color="#A76740"
+                    style={styles.chapterSavedMark}/>}
+                </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={'Действия с главой '+item.number}
+                  accessibilityHint="Сохранить главу или поделиться"
+                  onPress={() => setContextChapter(item)}
+                  style={({pressed}) => [styles.chapterMenu,pressed && styles.pressed]}
+                  hitSlop={5}
+                >
+                  <Ionicons name="ellipsis-vertical" size={16}
+                    color={artwork?.background && !isCurrent?'#FFF0D1':'#6D432B'}/>
+                </Pressable>
+              </View>
             );
           }}
         />
 
-        <FixedSectionHeader onHeaderHeightChange={setHeaderHeight} title={displayName} titleTextStyle={isTraditional ? traditionalBibleTextStyle : null} navigation={navigation} topInset={insets.top} />
+        <FixedSectionHeader onHeaderHeightChange={setHeaderHeight}
+          title={displayName} titleTextStyle={isTraditional ? traditionalBibleTextStyle : null}
+          navigation={navigation} topInset={insets.top}
+          showMenu onMenuPress={()=>setBookContextVisible(true)}/>
 
         <BottomNav navigation={navigation} active={null} />
+        <ContentContextMenu
+          visible={bookContextVisible}
+          title={displayName}
+          onClose={()=>setBookContextVisible(false)}
+          onShare={()=>shareContent({
+            title:displayName,
+            screen:'BibleBook',params:{bookId:book.id,translationCode},
+          })}
+          onSave={toggleBookSaved}
+          saved={!!findSavedBibleBook(savedBible,book,translationCode)}
+        />
+        <ContentContextMenu
+          visible={!!contextChapter}
+          title={contextChapter ? ui('chapter',
+            t('bible.chapter',{number:contextChapter.number}),
+            {number:contextChapter.number}) : ''}
+          onClose={()=>setContextChapter(null)}
+          onOpen={contextChapter ? ()=>openChapter(contextChapter) : null}
+          onShare={contextChapter ? ()=>shareContent({
+            title:displayName+' · '+ui('chapter',
+              t('bible.chapter',{number:contextChapter.number}),
+              {number:contextChapter.number}),
+            linkOnly:true,
+            screen:'BibleChapter',params:{bookId:book.id,
+              chapterNumber:contextChapter.number,translationCode},
+          }) : null}
+          onSave={contextChapter ? ()=>toggleChapterSaved(contextChapter) : null}
+          saved={!!(contextChapter &&
+            findSavedBibleChapter(savedBible,book,contextChapter,translationCode))}
+        />
       </ImageBackground>
     </View>
   );
@@ -396,7 +503,7 @@ const styles = StyleSheet.create({
     position: 'relative',
 
     flex: 1,
-    minHeight: 52,
+    minHeight: 58,
 
     marginBottom: 8,
 
@@ -409,6 +516,12 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(126, 82, 38, 0.18)',
     backgroundColor: 'rgba(248, 233, 207, 0.96)',
   },
+
+  chapterOpen:{flex:1,minHeight:58,width:'100%',alignItems:'center',
+    justifyContent:'center',paddingBottom:4},
+  chapterMenu:{position:'absolute',right:0,top:0,width:26,height:26,
+    alignItems:'center',justifyContent:'center',zIndex:2},
+  chapterSavedMark:{position:'absolute',left:7,top:7},
 
   chapterArtwork: {
     borderColor: 'rgba(220, 167, 89, 0.48)',
@@ -431,8 +544,8 @@ const styles = StyleSheet.create({
   },
 
   chapterCurrentArtwork: {
-    borderColor: '#E6B65E',
-    backgroundColor: 'rgba(126, 76, 25, 0.92)',
+    borderColor: '#945E36',
+    backgroundColor: '#FFF0CF',
   },
 
   chapterNumber: {
@@ -454,14 +567,20 @@ const styles = StyleSheet.create({
   },
 
   chapterNumberCurrent: {
-    color: '#FFE2A1',
+    color: '#4C2818',
+    textShadowColor:'transparent',
+    textShadowRadius:0,
+  },
+  chapterNumberChurch:{
+    fontSize:24,
+    lineHeight:32,
   },
 
   currentDot: {
     position: 'absolute',
 
-    top: 7,
-    right: 8,
+    bottom: 7,
+    left: 8,
 
     width: 6,
     height: 6,

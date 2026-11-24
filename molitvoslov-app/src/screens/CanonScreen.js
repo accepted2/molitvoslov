@@ -3,6 +3,7 @@ import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {ActivityIndicator, StyleSheet, Text, View} from 'react-native';
 
 import {contentApi as api} from '../services/contentApi';
+import {resolveSharedReaderRoute} from '../services/sharedReaderRoute';
 
 import {useReadingProgress} from '../hooks/useReadingProgress';
 
@@ -10,6 +11,7 @@ import {deleteSavedItem, getSavedItems, saveItem} from '../services/savedItems';
 
 import SelectableDocumentReader from '../components/reader/SelectableDocumentReader';
 import {ReaderBookmarkMenu} from '../components/reader/ReaderBookmarkMenu';
+import {shareContent, documentShareText} from '../services/contentSharing';
 
 import {colors} from '../theme';
 
@@ -104,6 +106,192 @@ const canonTextSignature = (value) =>
     .replace(/[^а-я0-9]+/giu, ' ')
     .trim();
 
+
+/* PENITENTIAL_TRADITIONAL_LABELS_20261117
+   Presentation-only headings for the supplied penitential canon's
+   Church-Slavonic-script variant. These labels are NOT saved to content. */
+const PENITENTIAL_TRADITIONAL_SLUG = 'kanon-pokayannyy-ko-gospodu-iisusu-khristu';
+const PENITENTIAL_TRADITIONAL_ODE = {
+  1: 'а҃', 2: 'в҃', 3: 'г҃', 4: 'д҃', 5: 'є҃',
+  6: 'ѕ҃', 7: 'з҃', 8: 'и҃', 9: 'ѳ҃',
+};
+const PENITENTIAL_TRADITIONAL_LABEL = {
+  irmos: 'І҆рмо́съ:',
+  refrain: 'Припѣ́въ:',
+  sedalen: 'Сѣда́ленъ, гла́съ ѕ҃-й:',
+  theotokion: 'Бг҃оро́диченъ:',
+  kontakion: 'Конда́къ:',
+  ikos: 'И҆́косъ:',
+  svetilen: 'Свѣти́ленъ:',
+  prayer: 'Моли́тва:',
+};
+const getPenitentialTraditionalLabel = (section, type) => {
+  if (section?.suppress_inline_label) return '';
+  // Ordinary troparia, Glory and And now have no separate header label:
+  // their own source text contains the full opening doxology.
+  return PENITENTIAL_TRADITIONAL_LABEL[type] || '';
+};
+
+
+/* THEOTOKOS_TRADITIONAL_RUBRICS_20261117
+   UI-only rubrics for the Paraklesis canon's traditional-script tab.
+   Do not mutate liturgical source or text offsets. */
+const THEOTOKOS_TRADITIONAL_SLUG = 'kanon-molebnyy-ko-presvyatoy-bogoroditse';
+const THEOTOKOS_TRADITIONAL_ODE = {
+  1: 'а҃', 2: 'в҃', 3: 'г҃', 4: 'д҃', 5: 'є҃',
+  6: 'ѕ҃', 7: 'з҃', 8: 'и҃', 9: 'ѳ҃',
+};
+const THEOTOKOS_TRADITIONAL_TITLE =
+  'Канѡ́нъ моле́бный ко Прест҃ѣ́й Бцⷣѣ,\u00A0пое́мый во всѧ́кой ско́рби дꙋше́внѣй и҆ ѡ҆бстоѧ́нїи';
+const theotokosNormalizeHeading = (heading) =>
+  String(heading || '').normalize('NFD')
+    .replace(/[\u0300-\u036f\u0483-\u0487]/g, '')
+    .replace(/ё/g, 'е').replace(/a/g, 'а').toLowerCase().trim();
+const getTheotokosTraditionalHeading = (heading) => {
+  const h = theotokosNormalizeHeading(heading);
+  if (/^(?:канон|канѡн)/u.test(h) && /феостирик|ѳеостирик/u.test(h))
+    return 'Канѡ́нъ. Творе́нїе Ѳеостирі́кта мона́ха. Гла́съ и҃-й';
+  if (/^(?:псалом|ѱалом)\s*50\b/u.test(h))
+    return 'Ѱало́мъ н҃';
+  if (/^стихир/u.test(h) && /глас/u.test(h))
+    return 'Стїхи́ры, гла́съ в҃-й';
+  if (/^кондак/u.test(h) && /глас/u.test(h))
+    return 'Конда́къ, гла́съ ѕ҃-й';
+  if (/^молитва\s+иная/u.test(h))
+    return 'Моли́тва и҆на́ѧ ко Прест҃ѣ́й Бцⷣѣ';
+  if (/^молитва\s+ко/u.test(h))
+    return 'Моли́тва ко Прест҃ѣ́й Бцⷣѣ';
+  if (/^к\s+богородице\s+прилежно/u.test(h))
+    return 'КЪ Бцⷣе прилѣ́жнѡ ны́нѣ притеце́мъ';
+  if (/^песнь\s*([1-9])/u.test(h)) {
+    const match = /^песнь\s*([1-9])/u.exec(h);
+    return 'Пѣ́снь ' + (THEOTOKOS_TRADITIONAL_ODE[Number(match[1])] || match[1]);
+  }
+  return heading || '';
+};
+const getTheotokosTraditionalInlineLabel = (section, sectionType) => {
+  if (section?.suppress_inline_label) return '';
+  const h = theotokosNormalizeHeading(section?.heading);
+  switch (sectionType) {
+    case 'irmos':
+      return 'І҆рмо́съ:';
+    case 'refrain':
+      return 'Припѣ́въ:';
+    case 'theotokion':
+      return 'Бг҃оро́диченъ:';
+    case 'troparion':
+      // Ordinary troparia have no printed "Тропарь" heading.
+      if (/тропар/u.test(h) && /богородиц/u.test(h) && /глас/u.test(h))
+        return 'Тропа́рь Бг҃оро́дице, гла́съ д҃-й:';
+      if (/тропар/u.test(h) && /глас/u.test(h))
+        return 'Тропа́рь, гла́съ в҃-й:';
+      return '';
+    case 'kontakion':
+      return /глас/u.test(h)
+        ? 'Конда́къ, гла́съ ѕ҃-й:' : 'Конда́къ:';
+    case 'ikos':
+      return 'И҆́косъ:';
+    case 'sedalen':
+      return 'Сѣда́ленъ:';
+    case 'svetilen':
+      return 'Свѣти́ленъ:';
+    case 'prayer':
+      if (/молитва\s+иная/u.test(h))
+        return 'Моли́тва и҆на́ѧ ко Прест҃ѣ́й Бцⷣѣ:';
+      if (/молитва\s+ко/u.test(h))
+        return 'Моли́тва ко Прест҃ѣ́й Бцⷣѣ:';
+      return 'Моли́тва:';
+    case 'stichira':
+      return 'Стїхи́ра:';
+    // The doxologies are already present at the start of the source text.
+    case 'glory':
+    case 'glory_now':
+    case 'now':
+    default:
+      return '';
+  }
+};
+
+
+/* GUARDIAN_ANGEL_TRADITIONAL_LABELS_20261117: Guardian Angel canon, traditional variant only.
+   Labels and headings are UI presentation; text and offsets remain unchanged. */
+const isGuardianAngelCanon = (canon) => {
+  const title = String(canon?.title || '').toLocaleLowerCase('ru-RU');
+  return title.includes('ангел') && title.includes('хранител');
+};
+const GUARDIAN_ANGEL_ODE_NUMERALS = {
+  1: 'а҃', 2: 'в҃', 3: 'г҃', 4: 'д҃', 5: 'є҃',
+  6: 'ѕ҃', 7: 'з҃', 8: 'и҃', 9: 'ѳ҃',
+};
+const GUARDIAN_ANGEL_TRAD_TITLE = 'Канѡ́нъ А҆́гг҃лꙋ-Храни́телю';
+const angelHeadingNormalized = (source) =>
+  String(source || '').normalize('NFD')
+    .replace(/[\u0300-\u036f\u0483-\u0487]/g, '')
+    .replace(/ё/g,'е').replace(/a/g, 'а')
+    .toLowerCase().trim();
+const guardianTraditionalHeading = (source) => {
+  const h = angelHeadingNormalized(source);
+  // Also catch the literal locale key BEFORE a legacy normalizer converts
+  // Latin "a" to Cyrillic "а", which would hide "calendar.troparion".
+  if (String(source || '').trim().toLowerCase() === 'calendar.troparion')
+    return '';
+  // GUARDIAN_ANGEL_TRADITIONAL_RUBRICS_V2_20261117: these are inline rubrics or cues, NOT heading sections.
+  if (/^(?:слава(?:\s+и\s+ныне)?|и\s+ныне|ирмос|припев|иисусу|богородичен|бгородичен|calendar\.troparion)(?=$|[\s:,.])/u.test(h))
+    return '';
+  if (/^тропар(?:ь)?\s*$/u.test(h)) return '';
+  if (/^тропар/u.test(h) && /глас/u.test(h) && /6/u.test(h))
+    return 'Тропа́рь, гла́съ ѕ҃-й';
+  if (/^канон/u.test(h) && /глас/u.test(h) && /8/u.test(h))
+    return 'Канѡ́нъ, гла́съ и҃-й';
+  if (/^седален/u.test(h) && /глас/u.test(h))
+    return 'Сѣда́ленъ, гла́съ в҃-й';
+  if (/^кондак/u.test(h) && /глас/u.test(h))
+    return 'Конда́къ, гла́съ д҃-й';
+  if (/^икос/u.test(h))
+    return 'І҆́косъ';
+  if (/^молитва/u.test(h) && /ангел/u.test(h))
+    return 'Мл҃тва къ А҆́гг҃лꙋ-Храни́телю';
+  const ode = /^песнь\s*([1-9])/u.exec(h);
+  if (ode)
+    return 'Пѣ́снь '+(GUARDIAN_ANGEL_ODE_NUMERALS[Number(ode[1])]||ode[1]);
+  return source || '';
+};
+const guardianAngelTraditionalInlineLabel = (section, sectionType, tradText) => {
+  if (section?.suppress_inline_label) return '';
+  const h = angelHeadingNormalized(section?.heading);
+  const source = String(tradText || '');
+  // GUARDIAN_ANGEL_TRADITIONAL_RUBRICS_V2_20261117: handle backend's "other" and "troparion" aliases,
+  // while keeping rubrics attached to their own text, not above as labels.
+  if (/^(?:богородичен|бгородичен)/u.test(h))
+    return 'Бг҃оро́диченъ:';
+  if (/^(?:иисусу|иисусе|иису)/u.test(h) ||
+      /гд[ⷭ҇]?и\s+і҆и҃се/u.test(source.slice(0,50)))
+    return 'І҆и҃сꙋ:';
+  if (/^ирмос/u.test(h)) return 'І҆рмо́съ:';
+  if (/^припев/u.test(h)) return 'Припѣ́въ:';
+  switch (sectionType) {
+    case 'irmos': return 'І҆рмо́съ:';
+    case 'refrain': return 'Припѣ́въ:';
+    case 'theotokion': return 'Бг҃оро́диченъ:';
+    case 'troparion':
+      // Ordinary troparia carry NO "calendar.troparion" label.
+      // Only the opening troparion has its own heading and tone.
+      if (section?.ode_number) return '';
+      return /тропар/u.test(h) && /глас\s*6/u.test(h)
+        ? 'Тропа́рь, гла́съ ѕ҃-й:'
+        : '';
+    case 'sedalen':
+      return /глас\s*2/u.test(h) ? 'Сѣда́ленъ, гла́съ в҃-й:' : 'Сѣда́ленъ:';
+    case 'kontakion':
+      return /глас\s*4/u.test(h) ? 'Конда́къ, гла́съ д҃-й:' : 'Конда́къ:';
+    case 'ikos': return 'І҆́косъ:';
+    case 'prayer': return ''; // A full standalone title is printed above the prayer.
+    case 'glory':
+    case 'now':
+    default: return '';
+  }
+};
+
 const getCanonInlineLabel = (section, text, t) => {
   if (!section || section.suppress_inline_label) {
     return '';
@@ -170,7 +358,16 @@ const getCanonInlineLabel = (section, text, t) => {
 
 export const CanonScreen = ({route, navigation}) => {
   const {language, t} = useLanguage();
-  const {canonId, slug, title, focusTarget = null} = route.params;
+  const {canonId: incomingId, slug: incomingSlug, title,
+    focusTarget: explicitFocusTarget = null, anchorId} = route.params || {};
+  // Deep links pass only one segment; internal catalog navigation passes id
+  // and slug separately. Resolve both cases against the bundled offline list.
+  const {id: canonId, slug} = resolveSharedReaderRoute('canon', {
+    id: incomingId, slug: incomingSlug,
+  });
+  const focusTarget = useMemo(() => explicitFocusTarget ||
+    (Number(anchorId)>0 ? {anchorType:'canon_section',anchorId:Number(anchorId)} : null),
+    [explicitFocusTarget,anchorId]);
 
   const insets = useSafeAreaInsets();
 
@@ -229,21 +426,22 @@ export const CanonScreen = ({route, navigation}) => {
 
       savedItemsRef.current = [];
 
-      const [response, saved] = await Promise.all([
-        api.get(`canons/${slug}/`),
-
-        getSavedItems({
-          source_type: 'canon',
-
-          source_id: canonId,
-        }),
-      ]);
-
+      if (!slug) throw new Error('Ссылка не соответствует локальному канону');
+      const response = await api.get(`canons/${slug}/`);
       setCanon(response.data);
 
-      savedItemsRef.current = saved;
-
-      setSavedItems(saved);
+      // Favorites are auxiliary. A SQLite/account error must not prevent a
+      // public offline document from opening via a shared link.
+      try {
+        const saved = await getSavedItems({
+          source_type: 'canon',
+          source_id: response.data.id,
+        });
+        savedItemsRef.current = saved;
+        setSavedItems(saved);
+      } catch (savedError) {
+        console.warn('[canon] favorites unavailable:', savedError?.message || savedError);
+      }
     } catch (loadError) {
       console.log('Ошибка загрузки канона:', loadError.response?.data || loadError.message);
 
@@ -416,6 +614,33 @@ export const CanonScreen = ({route, navigation}) => {
   ]);
 
   const handleAction = async (actionKey) => {
+    if(canon && String(actionKey||'').startsWith('canon-section:')){
+      const id=Number(String(actionKey).split(':')[1]);
+      const section=documentData?.sections?.find(item=>
+        Number(item.progressAnchorId)===id && id>0);
+      if(!section)return null;
+      const existing=savedItemsRef.current.find(item=>
+        item.anchor_type==='canon_section' &&
+        Number(item.anchor_id)===id && item.save_type==='section');
+      if(existing){
+        await deleteSavedItem(existing.id);
+        savedItemsRef.current=savedItemsRef.current.filter(item=>item.id!==existing.id);
+        return {active:false,label:t('common.addToFavorites')};
+      }
+      const body=(section.rows||[]).flatMap(row=>
+        (row.blocks||[]).map(block=>String(block.text||'').trim())).filter(Boolean).join('\n\n');
+      if(!body)return null;
+      const saved=await saveItem({
+        save_type:'section',source_type:'canon',source_id:canon.id,
+        anchor_type:'canon_section',anchor_id:id,
+        source_title:getLocalizedField(canon,'title',language)||title||'Канон',
+        item_title:section.title||'Часть канона',text:body,
+        start_offset:0,end_offset:body.length,
+        metadata:{slug:canon.slug||slug,variant:primaryVariant,language:viewMode},
+      });
+      savedItemsRef.current=[saved,...savedItemsRef.current];
+      return {active:true,label:t('common.inFavorites'),savedItem:saved};
+    }
     if (!canon || actionKey !== `canon:${canon.id}`) {
       return null;
     }
@@ -431,6 +656,7 @@ export const CanonScreen = ({route, navigation}) => {
       await deleteSavedItem(existing.id);
 
       savedItemsRef.current = savedItemsRef.current.filter((item) => item.id !== existing.id);
+      setSavedItems(savedItemsRef.current);
 
       return {
         label: t('common.addToFavorites'),
@@ -464,6 +690,7 @@ export const CanonScreen = ({route, navigation}) => {
     });
 
     savedItemsRef.current = [saved, ...savedItemsRef.current];
+    setSavedItems(savedItemsRef.current);
 
     return {
       label: t('common.inFavorites'),
@@ -498,6 +725,10 @@ export const CanonScreen = ({route, navigation}) => {
     const showUkrainian = viewMode === MODE_UKRAINIAN;
 
     const showTraditional = viewMode === MODE_TRADITIONAL;
+    const isTheotokosTraditional =
+      showTraditional && canon.slug === THEOTOKOS_TRADITIONAL_SLUG;
+    const isGuardianAngelTraditional =
+      showTraditional && isGuardianAngelCanon(canon);
 
     let nextBlockId = 1;
 
@@ -550,9 +781,8 @@ export const CanonScreen = ({route, navigation}) => {
         inlineLabel: inlineLabel || '',
 
         // Canon-specific visual ranges; never rewrite text or save offsets.
-        canonTypography: isParallelTranslation
-          ? null
-          : buildCanonTypography(
+        // CANON_PARALLEL_RU_BREAKS_NO_REFRAIN_LABEL_20261117: CS+RU also needs non-coloring linebreak ranges.
+        canonTypography: buildCanonTypography(
               text || '',
               inlineLabel || '',
               section.heading || '',
@@ -561,6 +791,7 @@ export const CanonScreen = ({route, navigation}) => {
                   ? 'prayer'
                   : section.section_type || '',
               {
+                parallelTranslation: isParallelTranslation,
                 initialOnlyFirstParagraph: !!section.grouped_prayer,
                 traditionalLiturgicalNotes:
                   canon.slug === 'tri-sovmeshchennykh-kanona' &&
@@ -613,7 +844,9 @@ export const CanonScreen = ({route, navigation}) => {
       };
     };
 
-    displaySections.forEach((section) => {
+    const isPenitentialTraditional =
+      showTraditional && canon.slug === PENITENTIAL_TRADITIONAL_SLUG;
+    displaySections.forEach((section, sectionIndex) => {
       const church = section.text?.content?.trim() || '';
 
       const russian = section.text?.translation?.trim() || '';
@@ -648,12 +881,26 @@ export const CanonScreen = ({route, navigation}) => {
             section: displaySection,
             text: traditional,
             language: 'traditional',
-            className: 'canon-church',
-            // The traditional source already contains all rubrics, and
-            // heading-only sections mark the ode boundaries. Avoid printing
-            // the generic "Текст" label before each prayer paragraph.
-            label: canon.slug === 'tri-sovmeshchennykh-kanona' ? '' : label,
-            inlineLabel: '',
+            className: isGuardianAngelTraditional
+              ? 'canon-church canon-guardian-angel-traditional canon-' + effectiveSectionType
+              : isTheotokosTraditional
+              ? 'canon-church canon-theotokos-traditional canon-' + effectiveSectionType
+              : isPenitentialTraditional
+              ? 'canon-church canon-traditional-penitential canon-' + effectiveSectionType
+              : 'canon-church',
+            // PENITENTIAL_TRADITIONAL_LABELS_20261117: this canon uses the same inline rubric design
+            // as the RU/CS reader, but with Church Slavonic orthography.
+            // Never display untranslated locale keys (calendar.troparion).
+            label: isGuardianAngelTraditional ? '' : isTheotokosTraditional ? '' : isPenitentialTraditional
+              ? ''
+              : (canon.slug === 'tri-sovmeshchennykh-kanona' ? '' : label),
+            inlineLabel: isGuardianAngelTraditional
+              ? guardianAngelTraditionalInlineLabel(displaySection, effectiveSectionType, traditional)
+              : isTheotokosTraditional
+              ? getTheotokosTraditionalInlineLabel(displaySection, effectiveSectionType)
+              : isPenitentialTraditional
+              ? getPenitentialTraditionalLabel(section, effectiveSectionType)
+              : '',
           })
         );
       }
@@ -742,19 +989,48 @@ export const CanonScreen = ({route, navigation}) => {
       let sectionTitle = '';
 
       if (odeNumber && odeNumber !== previousOde) {
-        sectionTitle = t('reading.ode', {number: odeNumber});
+        sectionTitle = isGuardianAngelTraditional
+          ? 'Пѣ́снь ' + (GUARDIAN_ANGEL_ODE_NUMERALS[odeNumber] || String(odeNumber))
+          : isTheotokosTraditional
+          ? 'Пѣ́снь ' + (THEOTOKOS_TRADITIONAL_ODE[odeNumber] || String(odeNumber))
+          : isPenitentialTraditional
+          ? 'Пѣ́снь ' + (PENITENTIAL_TRADITIONAL_ODE[odeNumber] || String(odeNumber))
+          : t('reading.ode', {number: odeNumber});
 
         previousOde = odeNumber;
       } else if (!odeNumber) {
         previousOde = null;
 
         if (showStandaloneHeading) {
-          sectionTitle = effectiveHeading;
+          sectionTitle = isGuardianAngelTraditional
+            ? guardianTraditionalHeading(effectiveHeading)
+            : isTheotokosTraditional
+            ? getTheotokosTraditionalHeading(effectiveHeading)
+            : effectiveHeading;
         }
       }
 
+      // CANON_RUSSIAN_NOW_GLORY_LINK_20261117: adjoining Glory / And now have no divider between them.
+      const nextSection = displaySections[sectionIndex + 1];
+      const nextSectionType = nextSection?.display_section_type || nextSection?.section_type;
+      const isGloryBeforeNow =
+        effectiveSectionType === 'glory' &&
+        nextSectionType === 'now' &&
+        Number(section.ode_number || 0) === Number(nextSection?.ode_number || 0);
+
+      // GUARDIAN_ANGEL_FINAL_PRAYER_HEADING_20261117: the final prayer is a standalone section, not an
+      // inline "Мл҃тва:" label. Do not affect RU, ordinary CS or other canons.
+      if (
+        isGuardianAngelTraditional &&
+        effectiveSectionType === 'prayer' &&
+        !odeNumber &&
+        blocks.length
+      ) {
+        sectionTitle = 'Мл҃тва къ А҆́гг҃лꙋ-Храни́телю';
+      }
+
       sections.push({
-        className: canon.slug === 'tri-sovmeshchennykh-kanona'
+        className: ((canon.slug === 'tri-sovmeshchennykh-kanona'
           ? viewMode === MODE_TRADITIONAL
             ? sectionTitle
               ? 'canon-section three-combined-canon three-combined-traditional three-combined-heading'
@@ -762,13 +1038,30 @@ export const CanonScreen = ({route, navigation}) => {
                 ? 'canon-section three-combined-canon three-combined-traditional three-combined-paragraph three-combined-refrain'
                 : 'canon-section three-combined-canon three-combined-traditional three-combined-paragraph'
             : 'canon-section three-combined-canon'
-          : 'canon-section',
+          : 'canon-section') + (isGloryBeforeNow ? ' canon-glory-before-now' : '')) + (canon?.slug === 'tri-sovmeshchennykh-kanona' && (
+    section?.section_type === 'prayer' ||
+    section?.display_section_type === 'prayer' ||
+    section?.grouped_prayer === true ||
+    /^(?:молитв|его\s+же(?:,|\s))/u.test(
+      String(section?.heading || '').normalize('NFD')
+        .replace(/\p{M}/gu,'').trim().toLowerCase()
+    )
+  ) ? ' three-combined-closing-prayer' : ''),
 
         progressAnchorId: Number(section.id),
 
         trackProgress: true,
 
         title: sectionTitle,
+        ...(sectionTitle && Number(section.id)>0 ? {
+          action: {
+            key:'canon-section:'+Number(section.id),
+            active:savedItems.some(saved=>
+              saved.anchor_type==='canon_section' &&
+              Number(saved.anchor_id)===Number(section.id) &&
+              saved.save_type==='section'),
+          },
+        } : {}),
 
         rows: blocks.map((block) => ({
           layout: 'stack',
@@ -776,6 +1069,17 @@ export const CanonScreen = ({route, navigation}) => {
           blocks: [block],
         })),
       });
+      if (isGuardianAngelTraditional) {
+        sections[sections.length - 1].className += ' canon-guardian-angel-traditional-section';
+      }
+
+      if (isTheotokosTraditional) {
+        sections[sections.length - 1].className += ' canon-theotokos-traditional-section';
+      }
+
+      if (isPenitentialTraditional) {
+        sections[sections.length - 1].className += ' canon-traditional-penitential-section';
+      }
     });
 
     // RU and CS+RU remain accessible. A missing or partial translation
@@ -830,10 +1134,19 @@ export const CanonScreen = ({route, navigation}) => {
     );
 
     return {
-      title: getLocalizedField(canon, 'title', language) || title || t('reading.canon'),
+      title: isGuardianAngelTraditional
+        ? GUARDIAN_ANGEL_TRAD_TITLE
+        : isTheotokosTraditional
+        ? THEOTOKOS_TRADITIONAL_TITLE
+        : getLocalizedField(canon, 'title', language) || title || t('reading.canon'),
+      // CANON_FLOWING_LONG_HEADER_JUSTIFIED_TRAD_TITLE_20261117: only the inner reader title is translated & justified.
+      // CANON_HEADER_RIGHT_LANGUAGE_AND_BALANCED_TRAD_TITLE_20261117
+      justifyTraditionalDocumentTitle: isTheotokosTraditional || isGuardianAngelTraditional,
 
       description: getLocalizedField(canon, 'description', language) || canon.tone || '',
 
+      // CANON_HEADER_ONLY_ACTIONS_RUBRIC_40_20261117: only the fixed reading header has save/share actions.
+      hideInlineActions: true,
       action: {
         key: `canon:${canon.id}`,
 
@@ -959,6 +1272,13 @@ export const CanonScreen = ({route, navigation}) => {
       />
 
       <ReaderBookmarkMenu
+        onSave={() => handleAction(`canon:${canon.id}`)}
+        isSaved={!!documentData.action?.active}
+        onShare={() => shareContent({
+          title:getLocalizedField(canon,'title',language)||title||'Канон',
+          linkOnly:true,
+          screen:'Canon',params:{canonId,slug},
+        })}
         visible={readerMenuVisible}
         onClose={() => setReaderMenuVisible(false)}
         navigation={navigation}
@@ -977,6 +1297,7 @@ export const CanonScreen = ({route, navigation}) => {
         gradientColor={readerBackground}
         onHeaderHeightChange={setHeaderHeight}
         title={getLocalizedField(canon, 'title', language) || title || t('reading.canon')}
+        flowLongTitleWithLanguage
         navigation={navigation}
         topInset={insets.top}
         showTitle

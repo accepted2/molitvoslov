@@ -103,6 +103,44 @@ class CalendarFeastSerializer(serializers.ModelSerializer):
         return self._get(obj, "description")
 
 
+
+    # BLAGOVEST_ALT_HYMN_SCHEMA_20261123
+    troparion_alt_title = serializers.SerializerMethodField()
+    troparion_alt_content = serializers.SerializerMethodField()
+    kontakion_alt_title = serializers.SerializerMethodField()
+    kontakion_alt_content = serializers.SerializerMethodField()
+
+    def _blagovest_alt_text(self, obj, key):
+        original = getattr(self, "_get", None)
+        if callable(original):
+            return original(obj, key)
+        context = getattr(self, "context", {}) or {}
+        request = context.get("request")
+        language = (request.query_params.get("lang", "") if request else "").lower()
+        if language == "uk":
+            return getattr(obj, key + "_uk", "") or getattr(obj, key, "")
+        return getattr(obj, key, "")
+
+    def get_troparion_alt_title(self, obj):
+        return self._blagovest_alt_text(obj, "troparion_alt_title")
+
+    def get_troparion_alt_content(self, obj):
+        return self._blagovest_alt_text(obj, "troparion_alt_content")
+
+    def get_kontakion_alt_title(self, obj):
+        return self._blagovest_alt_text(obj, "kontakion_alt_title")
+
+    def get_kontakion_alt_content(self, obj):
+        return self._blagovest_alt_text(obj, "kontakion_alt_content")
+
+    if isinstance(Meta.fields, (list, tuple)):
+        Meta.fields = list(Meta.fields) + [
+            "troparion_alt_title",
+            "troparion_alt_content",
+            "kontakion_alt_title",
+            "kontakion_alt_content",
+        ]
+
 class CalendarReadingSerializer(serializers.ModelSerializer):
     class Meta:
         model = CalendarReading

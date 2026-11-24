@@ -6,6 +6,7 @@ import {StatusBar} from 'expo-status-bar';
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
 import {BottomNav} from '../components/navigation/BottomNav';
 import {SaveHeartIcon} from '../components/icons/SaveHeartIcon';
+import {Ionicons} from '@expo/vector-icons';
 import {
   ActivityIndicator,
   FlatList,
@@ -26,11 +27,14 @@ import {deleteSavedItem, getSavedItems, saveItem} from '../services/savedItems';
 import {colors} from '../theme';
 import {useLanguage} from '../context/LanguageContext';
 import {getLocalizedField} from '../services/localizedContent';
+import {shareContent} from '../services/contentSharing';
+import {ContentContextMenu} from '../components/share/ContentContextMenu';
 import {LocalSearchField, filterByTitle} from '../components/search/LocalSearchField';
 
 export const CanonListScreen = ({navigation}) => {
   const {language, t} = useLanguage();
   const [canons, setCanons] = useState([]);
+  const [contextItem,setContextItem]=useState(null);
 
   const [savedCanons, setSavedCanons] = useState([]);
 
@@ -201,6 +205,8 @@ export const CanonListScreen = ({navigation}) => {
                   style={styles.itemMain}
                   activeOpacity={0.7}
                   onPress={() => openCanon(item)}
+                  onLongPress={() => setContextItem(item)}
+                  delayLongPress={340}
                 >
                   <View style={styles.textContainer}>
                     <Text style={styles.title}>{getLocalizedField(item, 'title', language)}</Text>
@@ -217,17 +223,29 @@ export const CanonListScreen = ({navigation}) => {
                   <Text style={styles.arrow}>›</Text>
                 </TouchableOpacity>
 
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={
-                    saved ? t('common.removeFromFavorites') : t('common.addFavorite')
-                  }
-                  hitSlop={6}
-                  onPress={() => toggleFavorite(item)}
-                  style={({pressed}) => [styles.favoriteButton, pressed && styles.pressed]}
-                >
-                  <SaveHeartIcon active={saved} size={20} />
-                </Pressable>
+                <View style={styles.itemActions}>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={saved ? t('common.removeFromFavorites') : t('common.addFavorite')}
+                    hitSlop={5}
+                    onPress={() => toggleFavorite(item)}
+                    style={({pressed}) => [styles.favoriteButton, pressed && styles.pressed]}
+                  >
+                    <SaveHeartIcon active={saved} size={19} />
+                  </Pressable>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Поделиться каноном"
+                    hitSlop={5}
+                    onPress={() => shareContent({
+                      title:getLocalizedField(item,'title',language),
+                      screen:'Canon',params:{canonId:item.id,slug:item.slug},
+                    })}
+                    style={({pressed}) => [styles.favoriteButton, pressed && styles.pressed]}
+                  >
+                    <Ionicons name="share-social-outline" size={19} color="#765238" />
+                  </Pressable>
+                </View>
               </View>
             );
           }}
@@ -244,6 +262,16 @@ export const CanonListScreen = ({navigation}) => {
         />
 
         <BottomNav navigation={navigation} active={null} />
+        <ContentContextMenu
+          visible={!!contextItem}
+          title={contextItem?getLocalizedField(contextItem,'title',language):''}
+          onClose={()=>setContextItem(null)}
+          onOpen={contextItem ? ()=>openCanon(contextItem) : null}
+          onShare={contextItem ? ()=>shareContent({
+            title:getLocalizedField(contextItem,'title',language),
+            screen:'Canon',params:{canonId:contextItem.id,slug:contextItem.slug},
+          }) : null}
+        />
       </View>
     </AppBackground>
   );
@@ -331,14 +359,15 @@ const styles = StyleSheet.create({
     fontSize: 23,
     lineHeight: 25,
   },
+  itemActions:{flexDirection:'row',alignSelf:'stretch',alignItems:'center',
+    borderLeftWidth:1,borderLeftColor:'rgba(126,82,38,0.24)',
+    backgroundColor:'rgba(238,220,192,0.48)',paddingHorizontal:2},
   favoriteButton: {
-    width: 44,
+    width: 36,
     alignSelf: 'stretch',
     alignItems: 'center',
     justifyContent: 'center',
-    borderLeftWidth: 1,
-    borderLeftColor: colors.border,
-    backgroundColor: 'rgba(238, 220, 192, 0.72)',
+    backgroundColor: 'transparent',
   },
   favoriteText: {
     fontSize: 22,

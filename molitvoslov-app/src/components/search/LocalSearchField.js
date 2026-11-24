@@ -25,10 +25,10 @@ export const filterSavedOnly = (items, query) =>
 
 export const LocalSearchField = ({
   value, onChangeText, placeholder = 'Поиск по названию', style,
-  accessibilityLabel,
+  accessibilityLabel, compact = false,
 }) => (
-  <View style={[styles.box, style]}>
-    <Text style={styles.glyph}>⌕</Text>
+  <View style={[styles.box, compact && styles.boxCompact, style]}>
+    <Text style={[styles.glyph, compact && styles.glyphCompact]}>⌕</Text>
     <TextInput
       value={value}
       onChangeText={onChangeText}
@@ -39,7 +39,7 @@ export const LocalSearchField = ({
       autoCapitalize="none"
       returnKeyType="search"
       clearButtonMode="never"
-      style={styles.input}
+      style={[styles.input, compact && styles.inputCompact]}
     />
     {!!value && <Pressable onPress={() => onChangeText('')} hitSlop={10} accessibilityRole="button" accessibilityLabel="Очистить поиск">
       <Text style={styles.clear}>×</Text>
@@ -50,7 +50,10 @@ const styles=StyleSheet.create({
   box:{height:46,flexDirection:'row',alignItems:'center',
     paddingHorizontal:13,borderWidth:1,borderColor:'rgba(123,79,36,.23)',
     borderRadius:14,backgroundColor:'#F8E9CF'},
+  boxCompact:{height:36,paddingHorizontal:8,borderRadius:11},
   glyph:{fontSize:23,color:'#765238',width:26},
+  glyphCompact:{fontSize:19,width:21},
   input:{flex:1,height:44,minWidth:0,fontSize:15,color:'#3E2A1D',fontFamily:'serif',paddingVertical:0},
+  inputCompact:{height:34,fontSize:13},
   clear:{fontSize:24,lineHeight:29,color:'#765238',width:30,textAlign:'center'},
 });

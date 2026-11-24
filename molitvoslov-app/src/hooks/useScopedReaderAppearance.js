@@ -8,8 +8,11 @@ import {
 import {DEFAULT_READING_SETTINGS, subscribeReadingSettings} from '../services/readerPreferences';
 
 /** Per account + per document, stored on device (never deleted by sign-out). */
-export const useScopedReaderAppearance = (sourceType, sourceId) => {
-  const [appearance, setAppearance] = useState(() => normalizeReaderAppearance(DEFAULT_READING_SETTINGS));
+export const useScopedReaderAppearance = (sourceType, sourceId, defaultFontSize = null) => {
+  const [appearance, setAppearance] = useState(() => normalizeReaderAppearance({
+    ...DEFAULT_READING_SETTINGS,
+    fontSize: defaultFontSize || DEFAULT_READING_SETTINGS.fontSize,
+  }));
   const [ready, setReady] = useState(false);
   const keyRef = useRef(null);
   const inheritedRef = useRef(true);
@@ -31,7 +34,7 @@ export const useScopedReaderAppearance = (sourceType, sourceId) => {
     inheritedRef.current = true;
     setReady(false);
     if (!sourceId) return () => {active = false;};
-    loadScopedAppearance({sourceType, sourceId}).then(({key, value, inherited}) => {
+    loadScopedAppearance({sourceType, sourceId, defaultFontSize}).then(({key, value, inherited}) => {
       if (!active) return;
       keyRef.current = key;
       inheritedRef.current = inherited;
@@ -43,15 +46,19 @@ export const useScopedReaderAppearance = (sourceType, sourceId) => {
       if (active) setReady(true);
     });
     return () => {active = false; persist();};
-  }, [sourceType, sourceId, persist]);
+  }, [sourceType, sourceId, defaultFontSize, persist]);
 
   // Existing readers without a custom override follow global changes live.
   useEffect(() => subscribeReadingSettings(settings => {
     if (!inheritedRef.current) return;
-    const next = normalizeReaderAppearance(settings);
+    const next = normalizeReaderAppearance({
+      ...settings,
+      fontSize: defaultFontSize && Number(settings.fontSize) === DEFAULT_READING_SETTINGS.fontSize
+        ? defaultFontSize : settings.fontSize,
+    });
     latestRef.current = next;
     setAppearance(next);
-  }), []);
+  }), [defaultFontSize]);
 
   const changeAppearance = useCallback((patch) => {
     inheritedRef.current = false;
@@ -67,11 +74,11 @@ export const useScopedReaderAppearance = (sourceType, sourceId) => {
   const resetAppearance = useCallback(async () => {
     if (timerRef.current) clearTimeout(timerRef.current);
     timerRef.current = null;
-    const next = await resetScopedAppearance(keyRef.current);
+    const next = await resetScopedAppearance(keyRef.current, {sourceType, defaultFontSize});
     inheritedRef.current = true;
     latestRef.current = next;
     setAppearance(next);
-  }, []);
+  }, [sourceType, defaultFontSize]);
 
   return {appearance, appearanceReady: ready, changeAppearance, resetAppearance};
 };

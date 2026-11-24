@@ -5,10 +5,14 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {buildReaderHeaderChrome} from '../../services/readerHeaderChrome';
 import {useInterfaceScale} from '../../context/InterfaceScaleContext';
+import {traditionalUiTextStyle} from '../../services/traditionalUiTypography';
+import {useLanguage} from '../../context/LanguageContext';
 
 export const FixedSectionHeader = ({
   title,
   titleTextStyle = null,
+  singleLineTitle = false, // MOLITVOSLOV_MISC_PRAYER_COMPACT_TITLE_V1
+  titleHyphenation = false,
   navigation,
   topInset = 0,
   showBack = true,
@@ -19,14 +23,20 @@ export const FixedSectionHeader = ({
   dark = false,
   gradientColor = null,
   titleOffsetY = 0,
+  // CANON_FLOWING_LONG_HEADER_JUSTIFIED_TRAD_TITLE_20261117: opt-in only, keeps short titles and non-canon headers unchanged.
+  flowLongTitleWithLanguage = false,
   readingHidden = false,
   compactReading = false,
   languageSwitcher = null,
   onLanguageChange,
   headerAction = null,
+  rightContent = null,
   onHeaderHeightChange,
 }) => {
   const uiScale = useInterfaceScale();
+  const {language,t} = useLanguage();
+  const traditional = language === 'csl_traditional';
+  const traditionalStyle = traditionalUiTextStyle(language, (compactReading ? 17 : 21) * uiScale, (compactReading ? 20 : 25) * uiScale);
   const insets = useSafeAreaInsets();
   const visibility = useRef(new Animated.Value(0)).current;
   const [languageOpen, setLanguageOpen] = useState(false);
@@ -34,19 +44,42 @@ export const FixedSectionHeader = ({
   const chrome = buildReaderHeaderChrome(chromeBackground, dark);
   const chromeDark = chrome.dark;
   const [titleLines, setTitleLines] = useState(1);
-  const extraTitleHeight = showTitle ? Math.max(0, titleLines - 1) * Math.ceil((compactReading ? 20 : 25) * uiScale) : 0;
+  const [lastTitleLineWidth, setLastTitleLineWidth] = useState(0);
+  const [titleLineWidth, setTitleLineWidth] = useState(0);
+  const [languagePillWidth, setLanguagePillWidth] = useState(80);
+  const useFlowTitle = flowLongTitleWithLanguage && compactReading &&
+    String(title || '').length > 42 && !!onLanguageChange &&
+    Array.isArray(languageSwitcher?.options) &&
+    languageSwitcher.options.some(option => option.key === languageSwitcher?.activeKey);
+  const lineHeight = (compactReading ? 20 : 25) * uiScale;
+  const flowReady = titleLineWidth > 0 && lastTitleLineWidth > 0;
+  const flowPillBelow = useFlowTitle && flowReady &&
+    lastTitleLineWidth + languagePillWidth + 8 > titleLineWidth;
+  const extraFlowHeight = flowPillBelow ? Math.ceil(26 * uiScale) : 0;
+  const extraTitleHeight = (singleLineTitle ? 0 : (showTitle
+    ? Math.max(0, titleLines - 1) * Math.ceil(lineHeight)
+    : 0)) + (showTitle ? Math.max(0, titleLines - 1) * Math.max(0, (traditionalStyle?.lineHeight || 0) - Math.ceil((compactReading ? 20 : 25) * uiScale)) : 0);
   // Readers extend under the translucent status bar; the native safe-area
   // inset accounts for different camera cutouts without device-specific px.
   // Category screens deliberately keep their original header layout.
   const safeTop = compactReading ? Math.max(insets.top, topInset, 0) : topInset;
   const contentTop = safeTop + (compactReading ? 4 : 0);
-  const headerHeight = contentTop + (compactReading ? 44 : (minimal ? 45 : 36)) + extraTitleHeight;
-  const gradientHeight = Math.max(headerHeight + 14, safeTop + 74);
+  const headerHeight = (contentTop + (compactReading ? 44 : (minimal ? 45 : 36)) +
+    extraTitleHeight + extraFlowHeight);
+  // The fixed top veil stays visible while controls slide away. Use about
+  // two lines of total height rather than a solid header-height overlay plus
+  // a second fade. Preserve the historical gradient colours/visual language.
+  const gradientHeight = Math.max(48, Math.round(headerHeight * 0.65));
   useEffect(() => {
     onHeaderHeightChange?.(headerHeight);
   }, [headerHeight, onHeaderHeightChange]);
   const languageOptions = Array.isArray(languageSwitcher?.options) ? languageSwitcher.options : [];
   const selectedLanguage = languageOptions.find(option => option.key === languageSwitcher?.activeKey);
+  const labelForReadingMode = option => {
+    if (!option) return '';
+    return ['church','russian','both','traditional'].includes(option.key)
+      ? t('readerModes.'+option.key) : option.label;
+  };
   // Freeze the reading header while the language menu is open. A scroll/idle
   // hide event must not dismiss the menu before the user can choose a language.
   const headerHidden = readingHidden && !languageOpen;
@@ -67,7 +100,7 @@ export const FixedSectionHeader = ({
         <LinearGradient
           pointerEvents="none"
           colors={chrome.gradient}
-          locations={[0, 0.43, 0.72, 1]}
+          locations={[0, 0.2, 0.5, 1]}
           start={{x: 0.5, y: 0}}
           end={{x: 0.5, y: 1}}
           style={[styles.fixedGradient, {height: gradientHeight}]}
@@ -131,22 +164,45 @@ export const FixedSectionHeader = ({
               style={[
                 styles.titleWrap,
                 compactReading && styles.titleWrapReading,
-                compactReading && {height: 44 + extraTitleHeight},
+                compactReading && {height: (44 + extraTitleHeight + extraFlowHeight)},
                 !showBack && styles.titleWrapRoot,
                 titleOffsetY !== 0 && !compactReading && {
                   transform: [{translateY: titleOffsetY}],
                 },
               ]}
             >
-              <View style={styles.titleLine}>
+              <View
+                style={[
+                  styles.titleLine,
+                  useFlowTitle && styles.titleLineFlow,
+                  flowPillBelow && {paddingBottom: extraFlowHeight},
+                ]}
+                onLayout={useFlowTitle
+                  ? event => {
+                      const width = event.nativeEvent.layout.width;
+                      setTitleLineWidth(prev => Math.abs(prev - width) < 0.5 ? prev : width);
+                    }
+                  : undefined}
+              >
                 <Text
-                  style={[styles.title, styles.titleFlex, compactReading && styles.titleReading, chromeDark && styles.titleDark, {
+                  accessibilityLabel={title}
+                  ellipsizeMode="tail"
+                  numberOfLines={singleLineTitle ? 1 : undefined}
+                  style={[styles.title, styles.titleFlex, compactReading && styles.titleReading,
+                    useFlowTitle && styles.titleFlowText, chromeDark && styles.titleDark, {
                     fontSize: (compactReading ? 17 : 21) * uiScale,
                     lineHeight: (compactReading ? 20 : 25) * uiScale,
-                  }, titleTextStyle]}
+                  }, traditionalStyle, titleTextStyle]}
+                  android_hyphenationFrequency={titleHyphenation ? "full" : undefined}
+                  textBreakStrategy={titleHyphenation ? "highQuality" : undefined}
                   onTextLayout={(event) => {
                     const count = event.nativeEvent?.lines?.length || 1;
                     setTitleLines((previous) => previous === count ? previous : count);
+                    if (useFlowTitle) {
+                      const lastLine = event.nativeEvent?.lines?.[count - 1];
+                      const width = Number(lastLine?.width || 0);
+                      setLastTitleLineWidth(prev => Math.abs(prev - width) < 0.5 ? prev : width);
+                    }
                   }}
                 >
                   {title}
@@ -154,12 +210,31 @@ export const FixedSectionHeader = ({
                 {!!selectedLanguage && !!onLanguageChange && (
                   <Pressable
                     accessibilityRole="button"
-                    accessibilityLabel="Выбрать язык чтения"
+                    accessibilityLabel={t('common.language')}
                     accessibilityState={{expanded: languageOpen}}
                     onPress={() => setLanguageOpen(true)}
-                    style={({pressed}) => [styles.languagePill, {backgroundColor: chrome.pill, borderColor: chrome.border}, pressed && styles.pressed]}
+                    onLayout={useFlowTitle
+                      ? event => {
+                          const width = event.nativeEvent.layout.width;
+                          setLanguagePillWidth(prev => Math.abs(prev - width) < 0.5 ? prev : width);
+                        }
+                      : undefined}
+                    style={({pressed}) => [
+                      styles.languagePill,
+                      {backgroundColor: chrome.pill, borderColor: chrome.border},
+                      useFlowTitle && styles.flowLanguagePill,
+                      useFlowTitle && {
+                        // CANON_HEADER_RIGHT_LANGUAGE_AND_BALANCED_TRAD_TITLE_20261117: right edge of title area, never left.
+                        right: 0,
+                        top: flowPillBelow
+                          ? titleLines * lineHeight + 3
+                          : Math.max(0, (titleLines - 1) * lineHeight - 1),
+                        opacity: flowReady ? 1 : 0,
+                      },
+                      pressed && styles.pressed,
+                    ]}
                   >
-                    <Text style={[styles.languagePillText, {fontSize: 10 * uiScale, lineHeight: 14 * uiScale}, chromeDark && styles.languagePillTextDark]} numberOfLines={1}>{selectedLanguage.label}</Text>
+                    <Text style={[styles.languagePillText, {fontSize: 10 * uiScale, lineHeight: 14 * uiScale}, chromeDark && styles.languagePillTextDark, traditionalUiTextStyle(language, 10 * uiScale, 14 * uiScale)]} numberOfLines={1}>{labelForReadingMode(selectedLanguage)}</Text>
                     <Ionicons name="chevron-down" size={13} color={chromeDark ? '#D7B88C' : '#744A2B'} style={styles.languageChevronIcon} />
                   </Pressable>
                 )}
@@ -177,7 +252,7 @@ export const FixedSectionHeader = ({
                   >
                     <Text
                       numberOfLines={1}
-                      style={[styles.headerActionText, {fontSize: 11 * uiScale, lineHeight: 15 * uiScale}, chromeDark && styles.headerActionTextDark]}
+                      style={[styles.headerActionText, {fontSize: 11 * uiScale, lineHeight: 15 * uiScale}, chromeDark && styles.headerActionTextDark, traditionalUiTextStyle(language, 11 * uiScale, 15 * uiScale)]}
                     >
                       {headerAction.label}
                     </Text>
@@ -191,6 +266,10 @@ export const FixedSectionHeader = ({
                 <View style={[styles.line, chromeDark && styles.lineDark]} />
               </View>
             </View>
+          )}
+
+          {!!rightContent && (
+            <View style={styles.rightContent}>{rightContent}</View>
           )}
 
           {showMenu && (
@@ -240,7 +319,7 @@ export const FixedSectionHeader = ({
                     pressed && styles.pressed,
                   ]}
                 >
-                  <Text style={[styles.languageDropdownText, {color: chrome.foreground}]}>{option.label}</Text>
+                  <Text style={[styles.languageDropdownText, {color: chrome.foreground},traditionalUiTextStyle(language, 13 * uiScale, 19 * uiScale)]}>{labelForReadingMode(option)}</Text>
                 </Pressable>
               ))}
             </View>
@@ -257,7 +336,7 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    // Independent from header animation. Never blocks reader scroll/taps.
+    // Fixed independently of the header; never blocks scrolling or taps.
     zIndex: 999,
     elevation: 19,
   },
@@ -331,6 +410,13 @@ const styles = StyleSheet.create({
     lineHeight: 46,
   },
 
+  rightContent: {
+    flexShrink: 0,
+    width: '48%',
+    minWidth: 115,
+    maxWidth: 250,
+    justifyContent: 'center',
+  },
   titleWrap: {
     flex: 1,
     minWidth: 0,
@@ -344,6 +430,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     minWidth: 0,
     gap: 5,
+  },
+  // CANON_FLOWING_LONG_HEADER_JUSTIFIED_TRAD_TITLE_20261117: full-width text; only the final line has an inline language pill.
+  titleLineFlow: {
+    flexDirection: 'column',
+    alignItems: 'stretch',
+    position: 'relative',
+    width: '100%',
+  },
+  titleFlowText: {
+    flexShrink: 0,
+    width: '100%',
+  },
+  flowLanguagePill: {
+    position: 'absolute',
+    zIndex: 3,
+    flexShrink: 0,
   },
   titleFlex: {
     flexShrink: 1,

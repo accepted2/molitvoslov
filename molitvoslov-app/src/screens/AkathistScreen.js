@@ -3,13 +3,16 @@ import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {ActivityIndicator, StyleSheet, Text, View} from 'react-native';
 
 import {contentApi as api} from '../services/contentApi';
+import {resolveSharedReaderRoute} from '../services/sharedReaderRoute';
 
 import {useReadingProgress} from '../hooks/useReadingProgress';
 
 import {deleteSavedItem, getSavedItems, saveItem} from '../services/savedItems';
 
 import SelectableDocumentReader from '../components/reader/SelectableDocumentReader';
+import {TRINITY_AKATHIST_PRAYER} from '../data/akathistTrinityPrayer';
 import {ReaderBookmarkMenu} from '../components/reader/ReaderBookmarkMenu';
+import {shareContent, documentShareText} from '../services/contentSharing';
 
 import {colors} from '../theme';
 
@@ -111,7 +114,16 @@ const getSectionTitle = (section, language, t) => {
 
 export const AkathistScreen = ({route, navigation}) => {
   const {language, t} = useLanguage();
-  const {akathistId, slug, title, focusTarget = null} = route.params;
+  const {akathistId: incomingId, slug: incomingSlug, title,
+    focusTarget: explicitFocusTarget = null, anchorId} = route.params || {};
+  // Deep links pass only one segment; internal catalog navigation passes id
+  // and slug separately. Resolve both cases against the bundled offline list.
+  const {id: akathistId, slug} = resolveSharedReaderRoute('akathist', {
+    id: incomingId, slug: incomingSlug,
+  });
+  const focusTarget = useMemo(() => explicitFocusTarget ||
+    (Number(anchorId)>0 ? {anchorType:'akathist_section',anchorId:Number(anchorId)} : null),
+    [explicitFocusTarget,anchorId]);
 
   const insets = useSafeAreaInsets();
 
@@ -166,21 +178,22 @@ export const AkathistScreen = ({route, navigation}) => {
       setSavedItems([]);
       savedItemsRef.current = [];
 
-      const [response, saved] = await Promise.all([
-        api.get(`akathists/${slug}/`),
-
-        getSavedItems({
-          source_type: 'akathist',
-
-          source_id: akathistId,
-        }),
-      ]);
-
+      if (!slug) throw new Error('Ссылка не соответствует локальному акафисту');
+      const response = await api.get(`akathists/${slug}/`);
       setAkathist(response.data);
 
-      savedItemsRef.current = saved;
-
-      setSavedItems(saved);
+      // Favorites are auxiliary. A SQLite/account error must not prevent a
+      // public offline document from opening via a shared link.
+      try {
+        const saved = await getSavedItems({
+          source_type: 'akathist',
+          source_id: response.data.id,
+        });
+        savedItemsRef.current = saved;
+        setSavedItems(saved);
+      } catch (savedError) {
+        console.warn('[akathist] favorites unavailable:', savedError?.message || savedError);
+      }
     } catch (loadError) {
       console.log('Ошибка загрузки акафиста:', loadError.response?.data || loadError.message);
 
@@ -282,6 +295,33 @@ export const AkathistScreen = ({route, navigation}) => {
   ]);
 
   const handleAction = async (actionKey) => {
+    if (akathist && String(actionKey || '').startsWith('akathist-section:')) {
+      const id=Number(String(actionKey).split(':')[1]);
+      const section=documentData?.sections?.find(row=>
+        Number(row.progressAnchorId)===id && id>0);
+      if(!section)return null;
+      const previous=savedItemsRef.current.find(item=>
+        item.anchor_type==='akathist_section' &&
+        Number(item.anchor_id)===id && item.save_type==='section');
+      if(previous){
+        await deleteSavedItem(previous.id);
+        savedItemsRef.current=savedItemsRef.current.filter(item=>item.id!==previous.id);
+        return {active:false,label:t('common.addToFavorites')};
+      }
+      const body=(section.rows||[]).flatMap(row=>
+        (row.blocks||[]).map(block=>String(block.text||'').trim())).filter(Boolean).join('\n\n');
+      if(!body)return null;
+      const saved=await saveItem({
+        save_type:'section',source_type:'akathist',source_id:akathist.id,
+        anchor_type:'akathist_section',anchor_id:id,
+        source_title:getLocalizedField(akathist,'title',language)||title||'Акафист',
+        item_title:section.title||'Часть акафиста',text:body,
+        start_offset:0,end_offset:body.length,
+        metadata:{slug:akathist.slug||slug,language:viewMode},
+      });
+      savedItemsRef.current=[saved,...savedItemsRef.current];
+      return {active:true,label:t('common.inFavorites'),savedItem:saved};
+    }
     if (!actionKey?.startsWith('akathist:') || !akathist) {
       return null;
     }
@@ -473,6 +513,9 @@ export const AkathistScreen = ({route, navigation}) => {
       }
 
       const blocks = [];
+      // MOLITVOSLOV_AKATHIST_PRAYER_PROSE_KONTAKION1_V1
+      const proseSuffix = ['opening', 'ending', 'trinity-prayer'].includes(specialKey)
+        ? ' akathist-prose-prayer' : '';
 
       const church = normalizeAkathistText(textObject.content);
 
@@ -505,7 +548,7 @@ export const AkathistScreen = ({route, navigation}) => {
               language: 'traditional',
             },
 
-            className: 'akathist-church',
+            className: 'akathist-church' + proseSuffix,
           })
         );
       }
@@ -532,7 +575,7 @@ export const AkathistScreen = ({route, navigation}) => {
               language: 'church',
             },
 
-            className: 'akathist-church',
+            className: 'akathist-church' + proseSuffix,
 
             special: specialKey,
           })
@@ -568,7 +611,7 @@ export const AkathistScreen = ({route, navigation}) => {
                 language: localizedLanguage,
               },
 
-              className: localizedLanguage === 'church' ? 'akathist-church' : 'akathist-russian',
+              className: (localizedLanguage === 'church' ? 'akathist-church' : 'akathist-russian') + proseSuffix,
 
               special: specialKey,
             })
@@ -602,7 +645,7 @@ export const AkathistScreen = ({route, navigation}) => {
                 language: localizedLanguage,
               },
 
-              className: localizedLanguage === 'church' ? 'akathist-church' : 'akathist-russian',
+              className: (localizedLanguage === 'church' ? 'akathist-church' : 'akathist-russian') + proseSuffix,
             })
           );
         }
@@ -630,7 +673,7 @@ export const AkathistScreen = ({route, navigation}) => {
               language: 'russian',
             },
 
-            className: 'akathist-russian',
+            className: 'akathist-russian' + proseSuffix,
 
             special: specialKey,
           })
@@ -677,6 +720,8 @@ export const AkathistScreen = ({route, navigation}) => {
       const sectionTitle = getSectionTitle(section, language, t);
 
       const fullSaveType = section.section_type === 'prayer' ? 'prayer' : 'section';
+      const prayerSuffix = section.section_type === 'prayer'
+        ? ' akathist-prose-prayer' : '';
 
       if (showTraditional && traditional) {
         blocks.push(
@@ -703,7 +748,7 @@ export const AkathistScreen = ({route, navigation}) => {
               language: 'traditional',
             },
 
-            className: 'akathist-church',
+            className: 'akathist-church' + prayerSuffix,
           })
         );
       }
@@ -732,7 +777,7 @@ export const AkathistScreen = ({route, navigation}) => {
               language: 'church',
             },
 
-            className: 'akathist-church',
+            className: 'akathist-church' + prayerSuffix,
           })
         );
       }
@@ -761,7 +806,7 @@ export const AkathistScreen = ({route, navigation}) => {
               language: 'russian',
             },
 
-            className: 'akathist-russian',
+            className: 'akathist-russian' + prayerSuffix,
           })
         );
       }
@@ -778,6 +823,15 @@ export const AkathistScreen = ({route, navigation}) => {
         className: 'akathist-section',
 
         title: sectionTitle,
+        ...(repeated || !Number(section.id) || missingLanguage ? {} : {
+          action: {
+            key:'akathist-section:'+Number(section.id),
+            active:savedItems.some(saved=>
+              saved.anchor_type==='akathist_section' &&
+              Number(saved.anchor_id)===Number(section.id) &&
+              saved.save_type==='section'),
+          },
+        }),
 
         note: getLocalizedField(section, 'note', language),
 
@@ -788,6 +842,20 @@ export const AkathistScreen = ({route, navigation}) => {
       });
     });
 
+    // Do not duplicate an already exported version of this specific prayer.
+    const hasTrinityPrayer = [
+      ...(akathist.sections || []).map(section => section.text?.content),
+      akathist.common_rule?.ending?.content,
+    ].some(value => {
+      const plain = String(value || '').replace(/[\u00ad\u200b]/gu, '')
+        .normalize('NFD').replace(/[\u0300-\u036f\u0483-\u0489]/gu, '');
+      return /Пресвятая[ \t]+Троице,[ \t]+Единосущная[ \t]+Державо/iu.test(plain);
+    });
+    if ((akathist.slug || slug) === 'akafist-presvjatoj-i-zhivotvorjashhej-troice' &&
+        !hasTrinityPrayer) {
+      addSpecial(TRINITY_AKATHIST_PRAYER,
+        'Моли́тва ко Пресвяте́й Тро́ице', 'trinity-prayer');
+    }
     addSpecial(akathist.common_rule?.ending, 'Окончание чтения акафиста', 'ending');
 
     // In CS+RU mode a partial translation is not silently presented as
@@ -948,6 +1016,11 @@ export const AkathistScreen = ({route, navigation}) => {
       />
 
       <ReaderBookmarkMenu
+        onShare={() => shareContent({
+          title:getLocalizedField(akathist,'title',language)||title||'Акафист',
+          linkOnly:true,
+          screen:'Akathist',params:{akathistId,slug},
+        })}
         visible={readerMenuVisible}
         onClose={() => setReaderMenuVisible(false)}
         navigation={navigation}

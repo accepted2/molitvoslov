@@ -13372,17 +13372,6 @@
       "julian_date": "2027-04-01",
       "feasts": [
         {
-          "key": "feast:local-4192",
-          "local_id": 4192,
-          "title": "Икона Богородицы Одигитрия Шуйская",
-          "title_uk": "",
-          "icon_url": "https://res.cloudinary.com/dnmoe5gza/image/upload/v1792061508/molitvoslov/calendar/azbyka/ikona-odigitrija-shujskaja.png",
-          "celebration_type": "",
-          "celebration_rank": "",
-          "priority": 100,
-          "observance": "primary"
-        },
-        {
           "key": "feast:local-4184",
           "local_id": 4184,
           "title": "Мученик Аврамий (Авраамий) Болгарский, Владимирский",
@@ -13399,17 +13388,6 @@
           "title": "Преподобная Мария Египетская",
           "title_uk": "",
           "icon_url": "https://res.cloudinary.com/dnmoe5gza/image/upload/v1792058403/molitvoslov/calendar/azbyka/sv-marija-egipetskaja.jpg",
-          "celebration_type": "",
-          "celebration_rank": "",
-          "priority": 100,
-          "observance": "primary"
-        },
-        {
-          "key": "feast:local-4190",
-          "local_id": 4190,
-          "title": "Преподобномученики отцы Давидо-Гареджийские",
-          "title_uk": "",
-          "icon_url": "https://res.cloudinary.com/dnmoe5gza/image/upload/v1792061506/molitvoslov/calendar/azbyka/sv-sobor-prepodobnomucheniki-otcy-davido-garedzhijskie.jpg",
           "celebration_type": "",
           "celebration_rank": "",
           "priority": 100,
@@ -13471,17 +13449,6 @@
           "observance": "primary"
         },
         {
-          "key": "feast:local-4189",
-          "local_id": 4189,
-          "title": "Мученики Христодул и Анастасия Патрские, убиенные в Ахаии",
-          "title_uk": "",
-          "icon_url": "",
-          "celebration_type": "",
-          "celebration_rank": "",
-          "priority": 100,
-          "observance": "primary"
-        },
-        {
           "key": "feast:local-4188",
           "local_id": 4188,
           "title": "Праведный Ахаз",
@@ -13504,8 +13471,8 @@
           "observance": "primary"
         }
       ],
-      "main_feast": "feast:local-4192",
-      "main_feast_reason": "fallback_priority_heuristic",
+      "main_feast": "feast:local-4181",
+      "main_feast_reason": "curated_azbyka_bright_tuesday",
       "fast": {
         "periods": [
           "Великий пост"
@@ -16022,6 +15989,39 @@
           "key": "feast:local-4347",
           "local_id": 4347,
           "title": "Священномученик Иоанн Пригоровский, пресвитер",
+          "title_uk": "",
+          "icon_url": "",
+          "celebration_type": "",
+          "celebration_rank": "",
+          "priority": 100,
+          "observance": "primary"
+        },
+        {
+          "key": "feast:local-4192",
+          "local_id": 4192,
+          "title": "Икона Богородицы Одигитрия Шуйская",
+          "title_uk": "",
+          "icon_url": "https://res.cloudinary.com/dnmoe5gza/image/upload/v1792061508/molitvoslov/calendar/azbyka/ikona-odigitrija-shujskaja.png",
+          "celebration_type": "",
+          "celebration_rank": "",
+          "priority": 100,
+          "observance": "primary"
+        },
+        {
+          "key": "feast:local-4190",
+          "local_id": 4190,
+          "title": "Преподобномученики отцы Давидо-Гареджийские",
+          "title_uk": "",
+          "icon_url": "https://res.cloudinary.com/dnmoe5gza/image/upload/v1792061506/molitvoslov/calendar/azbyka/sv-sobor-prepodobnomucheniki-otcy-davido-garedzhijskie.jpg",
+          "celebration_type": "",
+          "celebration_rank": "",
+          "priority": 100,
+          "observance": "primary"
+        },
+        {
+          "key": "feast:local-4189",
+          "local_id": 4189,
+          "title": "Мученики Христодул и Анастасия Патрские, убиенные в Ахаии",
           "title_uk": "",
           "icon_url": "",
           "celebration_type": "",

@@ -7,8 +7,11 @@ const ICONS = {
   akathists: require('../../../assets/icons/angel_icon.png'),
   canons: require('../../../assets/icons/book_icon.png'),
   communion: require('../../../assets/icons/chalice_icon.png'),
-  psalter: require('../../../assets/icons/psaltir_icon.png'),
-  bible: require('../../../assets/icons/bible_icon.png'),
+  psalter: require('../../../assets/icons/catalog_psalter_v2.webp'),
+  bible: require('../../../assets/icons/catalog_bible_v2.webp'),
+  hours: require('../../../assets/icons/catalog_hours_v2.webp'),
+  learning: require('../../../assets/icons/catalog_learning_v2.webp'),
+  various: require('../../../assets/icons/catalog_various_v2.webp'),
 };
 
 export const CategoryIcon = ({type, size = 54}) => {

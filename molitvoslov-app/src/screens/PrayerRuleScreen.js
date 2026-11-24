@@ -10,6 +10,7 @@ import {getSavedItems} from '../services/savedItems';
 
 import PrayerRuleReader from '../components/reader/PrayerRuleReader';
 import {ReaderAppearanceSheet} from '../components/reader/ReaderAppearanceSheet';
+import {shareContent, prayerRuleShareText} from '../services/contentSharing';
 
 import {MemorialQuickSheet} from '../components/memorial/MemorialQuickSheet';
 
@@ -24,7 +25,9 @@ import {useReadingChrome} from '../hooks/useReadingChrome';
 import {useScopedReaderAppearance} from '../hooks/useScopedReaderAppearance';
 import {isDarkReaderBackground, resolveReaderAppearance} from '../services/scopedReaderAppearance';
 import {READER_LANGUAGE_MODES, buildReaderLanguageOptions} from '../services/readerLanguageModes';
+import {hasCommunionTraditionalEdition} from '../services/communionTraditionalRule';
 import {useLanguage} from '../context/LanguageContext';
+import {getPrayerTextAvailability, resolvePrayerMode, isPrayerModeAvailable, buildPrayerModeOptions} from '../services/prayerTextAvailability';
 import {getLocalizedField} from '../services/localizedContent';
 import {
   getReaderLanguageModePreference,
@@ -36,14 +39,14 @@ const MODE_RUSSIAN = READER_LANGUAGE_MODES.RUSSIAN;
 const MODE_BOTH = READER_LANGUAGE_MODES.BOTH;
 const MODE_TRADITIONAL = READER_LANGUAGE_MODES.TRADITIONAL;
 
-const resolveAvailableViewMode = (mode) =>
-  [MODE_CHURCH, MODE_RUSSIAN, MODE_BOTH, MODE_TRADITIONAL].includes(mode)
-    ? mode
-    : MODE_CHURCH;
+const resolveAvailableViewMode = (mode, availability) => resolvePrayerMode(mode, availability);
 
 export const PrayerRuleScreen = ({route, navigation}) => {
   const {language, t} = useLanguage();
-  const {slug, focusTarget = null} = route.params;
+  const {slug, focusTarget: explicitFocusTarget = null, anchorId} = route.params;
+  const focusTarget = useMemo(() => explicitFocusTarget ||
+    (Number(anchorId)>0 ? {anchorType:'prayer_rule_item',anchorId:Number(anchorId)} : null),
+    [explicitFocusTarget,anchorId]);
 
   const insets = useSafeAreaInsets();
 
@@ -52,7 +55,7 @@ export const PrayerRuleScreen = ({route, navigation}) => {
 
   const [rule, setRule] = useState(null);
   const readerRef = useRef(null);
-  const {appearance, changeAppearance, resetAppearance} = useScopedReaderAppearance('prayer_rule', slug);
+  const {appearance, appearanceReady, changeAppearance, resetAppearance} = useScopedReaderAppearance('prayer_rule', slug);
   const [appearanceVisible, setAppearanceVisible] = useState(false);
   useEffect(() => {readerRef.current?.applyAppearance(appearance);}, [appearance]);
   const {readingChromeHidden, handleReadingScroll, handleNativeReadingScroll} = useReadingChrome();
@@ -79,31 +82,44 @@ export const PrayerRuleScreen = ({route, navigation}) => {
     loadRule();
   }, [slug]);
 
+  const hasChurchTranslation = useMemo(
+    () => (rule?.items || []).some(
+      item => item.item_type === 'text' && getPrayerTextAvailability(item.text).hasChurch
+    ),
+    [rule]
+  );
+
   const hasRussianTranslation = useMemo(
     () =>
       (rule?.items || []).some(
-        (item) => item.item_type === 'text' && !!item.text?.translation?.trim()
+        (item) => item.item_type === 'text' && getPrayerTextAvailability(item.text).hasRussian
       ),
     [rule]
   );
 
   const hasTraditionalTranslation = useMemo(
     () =>
+      /* CS_TRAD_COMMUNION_TAB_ENABLED_20261121 */
+      hasCommunionTraditionalEdition(rule) ||
       (rule?.items || []).some(
-        (item) => item.item_type === 'text' && !!item.text?.traditional_content?.trim()
+        (item) => item.item_type === 'text' && getPrayerTextAvailability(item.text).hasTraditional
       ),
     [rule]
   );
 
   const viewSwitcher = useMemo(
-    () => ({
-      activeKey: viewMode,
-      options: buildReaderLanguageOptions({
-        hasRussian: true,
-        hasTraditional: true,
-      }),
-    }),
-    [viewMode, hasRussianTranslation, hasTraditionalTranslation]
+    () => {
+      const available = {
+        hasChurch: hasChurchTranslation,
+        hasRussian: hasRussianTranslation,
+        hasTraditional: hasTraditionalTranslation,
+      };
+      return {
+        activeKey: resolveAvailableViewMode(viewMode, available),
+        options: buildPrayerModeOptions(available),
+      };
+    },
+    [viewMode, hasChurchTranslation, hasRussianTranslation, hasTraditionalTranslation]
   );
 
   useEffect(() => {
@@ -128,7 +144,8 @@ export const PrayerRuleScreen = ({route, navigation}) => {
         }
 
         setViewMode(
-          focusTarget?.highlightQuery ? MODE_CHURCH : resolveAvailableViewMode(savedMode, {
+          resolveAvailableViewMode(focusTarget?.highlightQuery ? MODE_CHURCH : savedMode, {
+            hasChurch: hasChurchTranslation,
             hasRussian: hasRussianTranslation,
             hasTraditional: hasTraditionalTranslation,
           })
@@ -141,7 +158,11 @@ export const PrayerRuleScreen = ({route, navigation}) => {
         );
 
         if (active) {
-          setViewMode(MODE_CHURCH);
+          setViewMode(resolveAvailableViewMode(MODE_CHURCH, {
+            hasChurch: hasChurchTranslation,
+            hasRussian: hasRussianTranslation,
+            hasTraditional: hasTraditionalTranslation,
+          }));
         }
       })
       .finally(() => {
@@ -153,7 +174,7 @@ export const PrayerRuleScreen = ({route, navigation}) => {
     return () => {
       active = false;
     };
-  }, [rule, slug, hasRussianTranslation, hasTraditionalTranslation, focusTarget]);
+  }, [rule, slug, hasChurchTranslation, hasRussianTranslation, hasTraditionalTranslation, focusTarget]);
 
   const handleViewModeChange = useCallback(
     (nextMode) => {
@@ -161,10 +182,13 @@ export const PrayerRuleScreen = ({route, navigation}) => {
         return;
       }
 
-      const resolvedMode = resolveAvailableViewMode(nextMode, {
+      const available = {
+        hasChurch: hasChurchTranslation,
         hasRussian: hasRussianTranslation,
         hasTraditional: hasTraditionalTranslation,
-      });
+      };
+      if (!isPrayerModeAvailable(nextMode, available)) return;
+      const resolvedMode = resolveAvailableViewMode(nextMode, available);
 
       setViewMode(resolvedMode);
 
@@ -179,7 +203,7 @@ export const PrayerRuleScreen = ({route, navigation}) => {
         );
       });
     },
-    [rule, slug, hasRussianTranslation, hasTraditionalTranslation]
+    [rule, slug, hasChurchTranslation, hasRussianTranslation, hasTraditionalTranslation]
   );
 
   const loadRule = async () => {
@@ -225,7 +249,7 @@ export const PrayerRuleScreen = ({route, navigation}) => {
     }
   };
 
-  if (loading || (rule && (!progressReady || !viewModeReady))) {
+  if (loading || (rule && (!progressReady || !viewModeReady || !appearanceReady))) {
     return (
       <View style={styles.center}>
         <ActivityIndicator size="large" color={colors.accent} />
@@ -250,6 +274,7 @@ export const PrayerRuleScreen = ({route, navigation}) => {
 
       <PrayerRuleReader
         ref={readerRef}
+        initialAppearance={appearance}
         rule={rule}
         savedItems={savedItems}
         savedProgress={savedProgress}
@@ -267,6 +292,11 @@ export const PrayerRuleScreen = ({route, navigation}) => {
       />
 
       <ReaderAppearanceSheet
+        onShare={() => shareContent({
+          title:getLocalizedField(rule,'name',language)||'Молитвенное правило',
+          linkOnly:true,
+          screen:'PrayerRule',params:{slug},
+        })}
         visible={appearanceVisible}
         onClose={() => setAppearanceVisible(false)}
         appearance={appearance}
@@ -294,7 +324,13 @@ export const PrayerRuleScreen = ({route, navigation}) => {
         showMenu
         onMenuPress={() => setAppearanceVisible(true)}
         languageSwitcher={viewSwitcher}
-        onLanguageChange={(mode) => readerRef.current?.changeViewMode(mode)}
+        onLanguageChange={(mode) => {
+          if (hasCommunionTraditionalEdition(rule)) {
+            handleViewModeChange(mode);
+            return;
+          }
+          readerRef.current?.changeViewMode(mode);
+        }}
       />
 
       <BottomNav navigation={navigation} active={null} readingHidden={readingChromeHidden} />

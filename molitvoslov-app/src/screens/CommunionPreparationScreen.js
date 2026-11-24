@@ -19,6 +19,8 @@ import {ThinScrollIndicator} from '../components/reader/ThinScrollIndicator';
 import {StatusBar} from 'expo-status-bar';
 import {AppBackground} from '../components/layout/AppBackground';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
+import {useLanguage} from '../context/LanguageContext';
+import {traditionalUiTextStyle} from '../services/traditionalUiTypography';
 
 const CANON_ORDER = [
   'tri-sovmeshchennykh-kanona',
@@ -46,6 +48,8 @@ const PendingItem = ({title, subtitle}) => (
 );
 
 export const CommunionPreparationScreen = ({navigation}) => {
+  const {language,t} = useLanguage();
+  const cslText = (size, lineHeight) => traditionalUiTextStyle(language, size, lineHeight);
   const [canons, setCanons] = useState([]);
 
   const [loading, setLoading] = useState(true);
@@ -80,7 +84,7 @@ export const CommunionPreparationScreen = ({navigation}) => {
         loadError.response?.data || loadError.message
       );
 
-      setError('Не удалось загрузить каноны');
+      setError(t('communion.loadError'));
     } finally {
       setLoading(false);
     }
@@ -115,7 +119,7 @@ export const CommunionPreparationScreen = ({navigation}) => {
       <View style={styles.center}>
         <ActivityIndicator size="large" color={colors.accent} />
 
-        <Text style={styles.loadingText}>Загрузка...</Text>
+        <Text style={styles.loadingText}>{t('common.loading')}</Text>
       </View>
     );
   }
@@ -141,7 +145,7 @@ export const CommunionPreparationScreen = ({navigation}) => {
           ]}
           showsVerticalScrollIndicator={false}
         >
-          <Text style={styles.sectionTitle}>Каноны</Text>
+          <Text style={[styles.sectionTitle,cslText(18,26)]}>{t('communion.canons')}</Text>
 
           {communionCanons.map((canon) => (
             <TouchableOpacity
@@ -151,11 +155,11 @@ export const CommunionPreparationScreen = ({navigation}) => {
               onPress={() => openCanon(canon)}
             >
               <View style={styles.textContainer}>
-                <Text style={styles.title} numberOfLines={2}>
+                <Text style={[styles.title,cslText(16,23)]} numberOfLines={2}>
                   {canon.title}
                 </Text>
 
-                {!!canon.tone && <Text style={styles.description}>{canon.tone}</Text>}
+                {!!canon.tone && <Text style={[styles.description,cslText(12,18)]}>{canon.tone}</Text>}
               </View>
 
               <Text style={styles.arrow}>›</Text>
@@ -165,13 +169,13 @@ export const CommunionPreparationScreen = ({navigation}) => {
           {communionCanons.length !== CANON_ORDER.length && (
             <View style={styles.warning}>
               <Text style={styles.warningText}>
-                Не все каноны найдены в базе. Проверьте импорт канонов.
+                {t('communion.missingCanons')}
               </Text>
             </View>
           )}
 
-          <Text style={[styles.sectionTitle, styles.afterSectionTitle]}>
-            Последование и молитвы
+          <Text style={[styles.sectionTitle, styles.afterSectionTitle,cslText(18,26)]}>
+            {t('communion.sequenceAndPrayers')}
           </Text>
 
           <TouchableOpacity
@@ -180,8 +184,8 @@ export const CommunionPreparationScreen = ({navigation}) => {
             onPress={() => openPrayerRule('posledovanie-ko-svyatomu-prichashcheniyu')}
           >
             <View style={styles.textContainer}>
-              <Text style={styles.title} numberOfLines={2}>
-                Последование ко Святому Причащению
+              <Text style={[styles.title,cslText(16,23)]} numberOfLines={2}>
+                {t('communion.sequence')}
               </Text>
             </View>
 
@@ -194,16 +198,16 @@ export const CommunionPreparationScreen = ({navigation}) => {
             onPress={() => openPrayerRule('blagodarstvennye-molitvy-po-svyatom-prichashchenii')}
           >
             <View style={styles.textContainer}>
-              <Text style={styles.title} numberOfLines={2}>
-                Благодарственные молитвы по Святом Причащении
+              <Text style={[styles.title,cslText(16,23)]} numberOfLines={2}>
+                {t('communion.thanksgiving')}
               </Text>
             </View>
 
             <Text style={styles.arrow}>›</Text>
           </TouchableOpacity>
 
-          <Text style={[styles.sectionTitle, styles.afterSectionTitle]}>
-            Подготовка к исповеди
+          <Text style={[styles.sectionTitle, styles.afterSectionTitle,cslText(18,26)]}>
+            {t('communion.confessionTitle')}
           </Text>
 
           <TouchableOpacity
@@ -211,12 +215,12 @@ export const CommunionPreparationScreen = ({navigation}) => {
             activeOpacity={0.7}
             onPress={() => navigation.navigate('ConfessionPreparation')}
             accessibilityRole="button"
-            accessibilityLabel="Открыть подготовку к исповеди"
+            accessibilityLabel={t('communion.confessionA11y')}
           >
             <View style={styles.textContainer}>
-              <Text style={styles.title}>Подготовка к исповеди</Text>
-              <Text style={styles.description}>
-                Список грехов с объяснениями и мои заметки
+              <Text style={[styles.title,cslText(16,23)]}>{t('communion.confessionTitle')}</Text>
+              <Text style={[styles.description,cslText(12,18)]}>
+                {t('communion.confessionSubtitle')}
               </Text>
             </View>
             <Text style={styles.arrow}>›</Text>
@@ -238,7 +242,8 @@ export const CommunionPreparationScreen = ({navigation}) => {
         />
 
         <FixedSectionHeader onHeaderHeightChange={setHeaderHeight}
-          title="Ко Святому Причащению"
+          title={t('communion.title')}
+          titleTextStyle={cslText(21,30)}
           navigation={navigation}
           topInset={insets.top}
         />

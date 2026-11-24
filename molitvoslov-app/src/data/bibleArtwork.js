@@ -1,22 +1,22 @@
 const BIBLE_ARTWORK = {
   MAT: {
-    icon: require('../../assets/bible/evangelists/matthew-icon.png'),
-    background: require('../../assets/bible/evangelists/matthew-bg.png'),
+    icon: require('../../assets/bible/evangelists/matthew-icon_opt.webp'),
+    background: require('../../assets/bible/evangelists/matthew-bg_opt.webp'),
   },
 
   MRK: {
-    icon: require('../../assets/bible/evangelists/mark-icon.png'),
-    background: require('../../assets/bible/evangelists/mark-bg.png'),
+    icon: require('../../assets/bible/evangelists/mark-icon_opt.webp'),
+    background: require('../../assets/bible/evangelists/mark-bg_opt.webp'),
   },
 
   LUK: {
-    icon: require('../../assets/bible/evangelists/luke-icon.png'),
-    background: require('../../assets/bible/evangelists/luke-bg.png'),
+    icon: require('../../assets/bible/evangelists/luke-icon_opt.webp'),
+    background: require('../../assets/bible/evangelists/luke-bg_opt.webp'),
   },
 
   JHN: {
-    icon: require('../../assets/bible/evangelists/john-icon.png'),
-    background: require('../../assets/bible/evangelists/john-bg.png'),
+    icon: require('../../assets/bible/evangelists/john-icon_opt.webp'),
+    background: require('../../assets/bible/evangelists/john-bg_opt.webp'),
   },
 };
 

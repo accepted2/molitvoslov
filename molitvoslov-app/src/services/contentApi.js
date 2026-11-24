@@ -1,5 +1,6 @@
 import {getDailyQuote} from './dailyQuote';
 import {getCurrentContent} from './contentStore';
+import {completeCommunionRussian} from './communionRussianCompletion';
 import {API_BASE_URL} from './backendAuth';
 import threeCombinedCanons from '../data/threeCombinedCanons.json';
 
@@ -44,7 +45,7 @@ const getLivePrayerRule = async (path) => {
   try {
     const data = await result.json();
     if (__DEV__) console.log('[PrayerRules] Django API:', path);
-    return response(data);
+    return response(completeCommunionRussian(data));
   } catch (error) {
     throw new Error(
       `Django вернул некорректный JSON для молитвенного правила (${url}): ` +
@@ -112,7 +113,7 @@ const getLocal = (rawPath) => {
   if (match) {
     const item = bundledContent.prayer_rules?.by_slug?.[match[1]];
     if (!item) throw notFound(path);
-    return item;
+    return completeCommunionRussian(item);
   }
 
   match = path.match(/^psalters\/([^/]+)\/$/);

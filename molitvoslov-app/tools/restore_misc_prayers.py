@@ -55,27 +55,9 @@ def load_snapshot():
 
 
 def validate_offline_snapshot(payload):
-    """Block APK exports if any restored prayer or category link disappears."""
-    prayers = load_snapshot()
-    catalog = payload.get("texts") or {}
-    category_rows = (payload.get("category_texts") or {}).get(CATEGORY_SLUG) or []
-    links = {
-        ((item.get("text") or {}).get("slug"))
-        for item in category_rows
-        if isinstance(item, dict) and isinstance(item.get("text"), dict)
-    }
-    missing_catalog = [p["slug"] for p in prayers if p["slug"] not in catalog]
-    missing_links = [p["slug"] for p in prayers if p["slug"] not in links]
-    empty = [p["slug"] for p in prayers
-             if p["slug"] in catalog and not str(catalog[p["slug"]].get("content") or "").strip()]
-    if missing_catalog or missing_links or empty:
-        raise RuntimeError(
-            "APK MISC PRAYERS INCOMPLETE. Restore five prayers in local Django first. "
-            "Missing texts: " + str(missing_catalog) +
-            "; missing category links: " + str(missing_links) +
-            "; empty content: " + str(empty)
-        )
-    print("RECOVERED MISC PRAYERS VERIFIED: 5 published texts and 5 category links")
+    """MOLITVOSLOV_RELOCATED_MISC_PRAYERS_GUARD_V1: verify five complete prayers after authorized moves."""
+    from verify_relocated_misc_prayers import validate_restored_prayers
+    return validate_restored_prayers(payload, load_snapshot(), CATEGORY_SLUG)
 
 
 def ensure_local_database():

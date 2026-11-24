@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {authenticatedFetch, getApiToken, getCachedBackendUser} from './backendAuth';
+import {authenticatedFetch, getApiToken, getCachedBackendUser, deleteApiToken} from './backendAuth';
 import {getAppLanguage, setAppLanguage} from './languagePreferences';
+import {readHomeOrderForUser, setHomeOrderForUser} from './homeCategoryOrder';
 import {
   getReadingSettings, saveReadingSettings,
   getAccountReaderModeStorageKey,
@@ -34,8 +35,9 @@ export const queueAccountPreferencePatch = (patch) => {
   // overwrite a newer color choice in the offline pending queue.
   const enqueue = async () => {
     const user = await getCachedBackendUser().catch(() => null);
-    const token = await getApiToken().catch(() => null);
-    if (!user?.id || !token) return;
+    // Keep offline pending changes even if the server token has expired.
+    // They remain scoped to the cached account ID, never another account.
+    if (!user?.id) return;
     const key = pendingKey(user.id);
     const current = await readPending(user.id);
     await AsyncStorage.setItem(key, JSON.stringify(mergePatch(current, patch)));
@@ -57,7 +59,21 @@ const request = async (method, patch = null) => {
   });
   if (!response.ok) {
     const data = await response.json().catch(() => ({}));
-    throw new Error(data?.detail || 'Cloud settings HTTP ' + response.status);
+    const message = String(data?.detail || data?.error || '');
+    // A 401, or a 403 explicitly reporting an invalid token, means the
+    // saved credential is expired. Do NOT treat all 403s as expired logins.
+    if (response.status === 401 || (
+      response.status === 403 &&
+      /недействительн.*токен|invalid\s+token/i.test(message)
+    )) {
+      // Clear ONLY the credential, not the account identity, local settings,
+      // or queued offline edits. Re-login will obtain a new backend token.
+      await deleteApiToken();
+      const error = new Error('Для облачной синхронизации требуется повторный вход.');
+      error.code = 'reauth-required';
+      throw error;
+    }
+    throw new Error(message || 'Cloud settings HTTP ' + response.status);
   }
   return response.json();
 };
@@ -70,8 +86,9 @@ const accountAppearanceKey = (id, scope) => {
 };
 
 const initialSnapshot = async (userId) => {
-  const [settings, language, keys] = await Promise.all([
+  const [settings, language, keys, homeCategoryOrder] = await Promise.all([
     getReadingSettings(), getAppLanguage(), AsyncStorage.getAllKeys(),
+    readHomeOrderForUser(userId, {inheritGuest:true}),
   ]);
   const overrides = {};
   const modes = {};
@@ -113,13 +130,15 @@ const initialSnapshot = async (userId) => {
     const raw = await AsyncStorage.getItem(key);
     if (VALID_READER_MODES.has(raw)) modes[key.slice(accountModePrefix.length)] = raw;
   }
-  return {settings: {...settings, language}, reader_overrides: overrides, reader_modes: modes};
+  return {settings: {...settings, language, homeCategoryOrder}, reader_overrides: overrides, reader_modes: modes};
 };
 
 const applySnapshot = async (userId, remote) => {
   if (remote.settings && Object.keys(remote.settings).length) {
     await saveReadingSettings(remote.settings);
     if (remote.settings.language) await setAppLanguage(remote.settings.language);
+    if (Array.isArray(remote.settings.homeCategoryOrder))
+      await setHomeOrderForUser(userId, remote.settings.homeCategoryOrder);
   }
   const previousKey = LAST_SCOPES + String(userId);
   const previous = parse(await AsyncStorage.getItem(previousKey), {appearance: [], modes: []});
@@ -149,7 +168,8 @@ const applySnapshot = async (userId, remote) => {
 const syncOnce = async () => {
   const user = await getCachedBackendUser().catch(() => null);
   const token = await getApiToken().catch(() => null);
-  if (!user?.id || !token) return {success: false, reason: 'no-user'};
+  if (!user?.id) return {success: false, reason: 'no-user'};
+  if (!token) return {success: false, reason: 'reauth-required'};
   const id = user.id;
   await writeQueue;
   let remote = await request('GET');
@@ -173,6 +193,10 @@ const syncOnce = async () => {
         !Object.prototype.hasOwnProperty.call(remote.reader_modes || {}, scope))
     );
     pending = mergePatch({
+      ...(remote.settings?.homeCategoryOrder === undefined &&
+        legacy.settings.homeCategoryOrder?.length
+        ? {settings:{homeCategoryOrder:legacy.settings.homeCategoryOrder}}
+        : {}),
       reader_overrides: missingOverrides,
       reader_modes: missingModes,
     }, pending);
@@ -202,6 +226,21 @@ const syncOnce = async () => {
 
 export const syncAccountPreferences = () => {
   if (running) return running;
-  running = syncOnce().finally(() => { running = null; });
+  running = syncOnce()
+    .catch(error => {
+      // Authorization is a recoverable state, not a network retry error.
+      // Account UI can prompt for login; do not emit repeating WARN messages.
+      if (error?.code === 'reauth-required') {
+        return {success: false, reason: 'reauth-required'};
+      }
+      // Extra guard if an auth adapter throws the server detail directly.
+      // Do not suppress unrelated 403 or 503 errors.
+      if (/^(?:Недействительный токен|Invalid token).?$/i.test(
+        String(error?.message || '').trim())) {
+        return deleteApiToken().then(() => ({success: false, reason: 'reauth-required'}));
+      }
+      throw error;
+    })
+    .finally(() => { running = null; });
   return running;
 };

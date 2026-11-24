@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Удаление аккаунта — Молитвослов</title>
+<style>body{margin:0;background:#fff5e5;color:#402a1e;font:17px/1.55 system-ui,Arial,sans-serif}
+main{max-width:660px;margin:25px auto;padding:24px;background:#fffbf4;border-radius:14px;border:1px solid #e4ceb2}
+h1{font-size:26px}a{color:#87512b}label{display:block;margin:14px 0 5px;font-weight:600}
+input,textarea{box-sizing:border-box;width:100%;padding:12px;border:1px solid #b49a7b;border-radius:8px;font:inherit}
+button{margin-top:20px;padding:12px 22px;color:#fff;background:#72472e;border:0;border-radius:9px;font:inherit;cursor:pointer}
+.info{padding:12px;background:#f4e4cd;border-radius:8px}.error{color:#a32a2a}</style></head>
+<body><main>
+<h1>Удаление аккаунта «Молитвослов»</h1>
+<p>Здесь можно запросить удаление аккаунта и связанных с ним данных без установки приложения. В приложении это также доступно через «Аккаунт» → «Удалить аккаунт и облачные данные».</p>
+<p>После подтверждения принадлежности аккаунта удаляются данные авторизации, синхронизированное избранное, прогресс, помянники, личные молитвословы, настройки и загруженные фотографии. Обработка запроса требует проверки личности. О необходимых исключениях для хранения данных сообщается отдельно.</p>
+{% if submitted %}
+<div class="info" role="status">Запрос принят. Для безопасности мы проверим принадлежность аккаунта по указанной почте, прежде чем удалить данные. Отправка формы сама по себе аккаунт не удаляет.</div>
+{% else %}
+<form method="post">{% csrf_token %}
+<label for="kind">Тип обращения</label>
+<select id="kind" name="kind" style="padding:12px;width:100%;border-radius:8px">
+<option value="deletion" {% if kind == 'deletion' %}selected{% endif %}>Удаление аккаунта и данных</option>
+<option value="privacy" {% if kind == 'privacy' %}selected{% endif %}>Вопрос по персональным данным</option>
+</select>
+<label for="email">Электронная почта, связанная с аккаунтом</label>
+<input id="email" name="email" type="email" required autocomplete="email" maxlength="254">
+<label for="message">Комментарий (необязательно)</label>
+<textarea id="message" name="message" rows="3" maxlength="1000"></textarea>
+{% if error %}<p role="alert" class="error">{{ error }}</p>{% endif %}
+<button type="submit">Отправить запрос</button>
+</form>
+{% endif %}
+<p><a href="../privacy-policy/">Политика конфиденциальности</a></p>
+</main></body></html>

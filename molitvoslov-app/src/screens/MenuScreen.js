@@ -5,7 +5,6 @@ import {
   Alert,
   Image,
   ImageBackground,
-  InteractionManager,
   ScrollView,
   Pressable,
   StyleSheet,
@@ -15,6 +14,7 @@ import {
 import {requestPinWidget, requestWidgetUpdate} from 'react-native-android-widget';
 
 import {getDailyQuote} from '../services/dailyQuote';
+import {resolveDailyQuoteSource, openDailyQuoteSource} from '../services/dailyQuoteNavigation';
 import {QuoteOfDayWidget} from '../widgets/QuoteOfDayWidget';
 import {useFocusEffect} from '@react-navigation/native';
 import {SafeAreaView, useSafeAreaInsets} from 'react-native-safe-area-context';
@@ -26,6 +26,7 @@ import {SaveHeartIcon} from '../components/icons/SaveHeartIcon';
 import {homeArtwork} from '../data/homeArtwork';
 import {contentApi as api} from '../services/contentApi';
 import {bibleContent} from '../services/bibleContent';
+import {getCslBibleBookName, formatBibleNumber} from '../services/bibleUi';
 import {deleteReadingProgress, getReadingProgress} from '../services/readingProgress';
 import {deleteSavedItem, getSavedItems, saveItem} from '../services/savedItems';
 import {
@@ -42,15 +43,23 @@ import {
 import {CALENDAR_MONTHS, calendarText} from '../services/calendarPreferences';
 import {useLanguage} from '../context/LanguageContext';
 import {useInterfaceScale} from '../context/InterfaceScaleContext';
+import {traditionalUiTextStyle} from '../services/traditionalUiTypography';
+import {displayCalendarNumber} from '../services/calendarDisplayNumerals';
 import {LANGUAGE_OPTIONS, getCalendarDataLanguage} from '../services/languagePreferences';
 import {getLocalizedField} from '../services/localizedContent';
+import {getProgressEntityTitle, getProgressSectionTitle} from '../services/continueReadingDisplay';
 import {ChurchCalendarWidget} from '../widgets/ChurchCalendarWidget';
 import {getOfflineCalendarDay, getOfflineCalendarMonth} from '../services/calendarOfflineStore';
+import {useCalendarTodayRollover, shouldAdvanceSelectedDay} from '../hooks/useCalendarTodayRollover';
 import {getBundledCalendarIconSource} from '../data/calendarIconAssets';
 import {subscribeToContentUpdates, getCurrentContent} from '../services/contentStore';
 import {getCachedPublicImage} from '../services/publicAssetCache';
 import {colors, spacing} from '../theme';
+import {ReorderableCategoryCard} from '../components/navigation/ReorderableCategoryCard';
+import {getHomeCategoryOrder, saveHomeCategoryOrder, mergeCategoryOrder, moveCategoryKeyToIndex} from '../services/homeCategoryOrder';
+import {queueAccountPreferencePatch} from '../services/accountPreferencesSync';
 import {getBibleArtwork} from '../data/bibleArtwork';
+import {refreshCalendarWidgetsFromApp} from '../widgets/widgetCalendarRefresh';
 const CATEGORY_ICONS = {
   morning: 'morning',
   evening: 'evening',
@@ -60,6 +69,9 @@ const CATEGORY_ICONS = {
   psalter: 'psalter',
   misc: 'canons',
   bible: 'bible',
+  hours: 'hours',
+  learning: 'learning',
+  various: 'various',
 };
 
 const resolveCategoryIcon = (...values) => {
@@ -173,8 +185,8 @@ const createCalendarSnapshot = (
   return {
     year,
     month,
-    monthTitle: `${locale.nominative[month]} ${year}`,
-    dayTitle: `${selectedDate.getDate()} ${locale.genitive[selectedDate.getMonth()]} ${selectedDate.getFullYear()}`,
+    monthTitle: `${locale.nominative[month]} ${displayCalendarNumber(year, language)}`,
+    dayTitle: `${displayCalendarNumber(selectedDate.getDate(), language)} ${locale.genitive[selectedDate.getMonth()]} ${displayCalendarNumber(selectedDate.getFullYear(), language)}`,
     weekday: locale.weekdays[selectedDate.getDay()],
     miniWeekdays: locale.miniWeekdays,
     isSelectedToday: selectedKey === todayKey,
@@ -214,12 +226,19 @@ const BellGlyph = () => (
   </View>
 );
 
-const DecorativeCard = ({title, subtitle, symbol, iconSource, artwork, onPress}) => {
+const DecorativeCard = ({title, subtitle, symbol, iconSource, artwork, onPress, disabled=false}) => {
   const uiScale = useInterfaceScale();
+  const {language} = useLanguage();
+  const traditional = language === 'csl_traditional';
+  const traditionalTitleStyle = traditionalUiTextStyle(language, 17 * uiScale, 20 * uiScale);
+  const traditionalSubtitleStyle = traditionalUiTextStyle(language, 11 * uiScale, 14 * uiScale);
+  const cardHeight = 80 * uiScale;
+  const traditionalStyle = language === 'csl_traditional' ? {fontFamily:'Ponomar',fontWeight:'400'} : null;
   return (
   <Pressable
     onPress={onPress}
-    style={({pressed}) => [styles.libraryCard, {minHeight: 80 * uiScale}, pressed && styles.pressed]}
+    disabled={disabled}
+    style={({pressed}) => [styles.libraryCard, {minHeight: 80 * uiScale, height: 80 * uiScale}, pressed && styles.pressed, traditional && {minHeight: cardHeight, height: cardHeight}]}
   >
     <ImageBackground
       source={artwork}
@@ -266,12 +285,12 @@ const DecorativeCard = ({title, subtitle, symbol, iconSource, artwork, onPress})
     </View>
 
     <View style={styles.libraryText}>
-      <Text style={[styles.libraryTitle, {fontSize: 17 * uiScale, lineHeight: 20 * uiScale}]} numberOfLines={2}>
+      <Text style={[styles.libraryTitle, {fontSize: 17 * uiScale, lineHeight: 20 * uiScale}, traditionalStyle, traditionalTitleStyle]} numberOfLines={2}>
         {title}
       </Text>
 
       {!!subtitle && (
-        <Text style={[styles.librarySubtitle, {fontSize: 11 * uiScale, lineHeight: 14 * uiScale}]} numberOfLines={2}>
+        <Text style={[styles.librarySubtitle, {fontSize: 11 * uiScale, lineHeight: 14 * uiScale}, traditionalStyle, traditionalSubtitleStyle]} numberOfLines={2}>
           {subtitle}
         </Text>
       )}
@@ -357,6 +376,11 @@ export const MenuScreen = ({navigation}) => {
   }, [homeBannerUrl]);
 
   const [categories, setCategories] = useState([]);
+  const [categoryOrder, setCategoryOrder] = useState([]);
+  const [movingCategory, setMovingCategory] = useState(false);
+  const [draggedCategoryKey, setDraggedCategoryKey] = useState(null);
+  const dragOrderRef = useRef(null);
+  const dragDidMoveRef = useRef(false);
   const [cachedHomeBanner, setCachedHomeBanner] = useState(null);
   const [homeBannerUrl, setHomeBannerUrl] = useState(() => {
     const asset = getCurrentContent()?.app_assets?.home_banner;
@@ -367,7 +391,7 @@ export const MenuScreen = ({navigation}) => {
   const [prayerRules, setPrayerRules] = useState([]);
   const [readingProgress, setReadingProgress] = useState([]);
 
-  const [dailyQuote, setDailyQuote] = useState(null);
+  const [dailyQuote, setDailyQuote] = useState(() => getDailyQuote());
   const [savedDailyQuote, setSavedDailyQuote] = useState(null);
   const [calendarToday, setCalendarToday] = useState(null);
   const [calendarMonthDays, setCalendarMonthDays] = useState([]);
@@ -382,9 +406,27 @@ export const MenuScreen = ({navigation}) => {
   const calendarRequestRef = useRef(0);
   const selectedCalendarDateRef = useRef(calendarSelectedDate);
   selectedCalendarDateRef.current = calendarSelectedDate;
+
+  const calendarLocalToday = useCalendarTodayRollover((previousToday, currentToday) => {
+    // Do not override an explicitly selected day other than yesterday's
+    // "today". Avoid changing the visible month if the user browsed away.
+    if (!shouldAdvanceSelectedDay(
+      toCalendarDate(selectedCalendarDateRef.current), previousToday,
+    )) return;
+    const [year, month, day] = currentToday.split('-').map(Number);
+    const nextDate = new Date(year, month - 1, day);
+    selectedCalendarDateRef.current = nextDate;
+    setCalendarSelectedDate(nextDate);
+    setCalendarVisibleMonth(visible => {
+      if (toCalendarDate(visible).slice(0, 7) !== previousToday.slice(0, 7)) {
+        return visible;
+      }
+      return new Date(year, month - 1, 1);
+    });
+  });
   const calendarSnapshot = useMemo(
     () => createCalendarSnapshot(calendarVisibleMonth, calendarSelectedDate, calendarLanguage),
-    [calendarVisibleMonth, calendarSelectedDate, calendarLanguage]
+    [calendarVisibleMonth, calendarSelectedDate, calendarLanguage, calendarLocalToday]
   );
   const calendarMonthMap = useMemo(
     () => new Map(calendarMonthDays.map((day) => [day.date_gregorian, day])),
@@ -446,7 +488,6 @@ export const MenuScreen = ({navigation}) => {
         akathistsResponse,
         canonsResponse,
         prayerRulesResponse,
-        quoteResponse,
       ] = await Promise.all([
         api.get('categories/'),
         api.get('akathists/'),
@@ -464,21 +505,25 @@ export const MenuScreen = ({navigation}) => {
       setCanons(canonsResponse.data);
       setPrayerRules(prayerRulesResponse.data);
 
-      const quote = quoteResponse.data;
+      const quote = getDailyQuote();
 
       setDailyQuote(quote);
 
-      if (quote?.id) {
-        const savedQuotes = await getSavedItems({
-          source_type: 'daily_quote',
-          source_id: quote.id,
-          anchor_type: 'daily_quote',
-          anchor_id: quote.id,
-          save_type: 'quote',
-        });
-
-        setSavedDailyQuote(savedQuotes[0] || null);
-      } else {
+      try {
+        if (quote?.id) {
+          const savedQuotes = await getSavedItems({
+            source_type: 'daily_quote',
+            source_id: quote.id,
+            anchor_type: 'daily_quote',
+            anchor_id: quote.id,
+            save_type: 'quote',
+          });
+          setSavedDailyQuote(savedQuotes[0] || null);
+        } else {
+          setSavedDailyQuote(null);
+        }
+      } catch (err) {
+        console.warn('[home] Could not read saved status of daily quote:', err);
         setSavedDailyQuote(null);
       }
 
@@ -602,6 +647,8 @@ export const MenuScreen = ({navigation}) => {
   useFocusEffect(
     useCallback(() => {
       loadProgress();
+      // Recalculate on returning to Home, including after midnight.
+      setDailyQuote(getDailyQuote());
 
       if (dailyQuote?.id) {
         getSavedItems({
@@ -618,24 +665,16 @@ export const MenuScreen = ({navigation}) => {
   );
 
   const updateCalendarWidget = useCallback(
-    async (day = calendarToday, language = calendarLanguage) => {
+    async (_unusedDay = null, language = calendarLanguage) => {
       try {
-        await requestWidgetUpdate({
-          widgetName: 'ChurchCalendar',
-          renderWidget: (widgetInfo) => (
-            <ChurchCalendarWidget
-              day={day}
-              language={language}
-              width={widgetInfo.width}
-              height={widgetInfo.height}
-            />
-          ),
-        });
+        // Every Android calendar widget keeps its own selected day and month.
+        // Do not overwrite a pinned browsing session with the mini-calendar.
+        await refreshCalendarWidgetsFromApp(language);
       } catch (error) {
         console.log('Ошибка обновления виджета календаря:', error?.message || error);
       }
     },
-    [calendarToday, calendarLanguage]
+    [calendarLanguage]
   );
 
   // The native Android widget update can be expensive. Do not run it in
@@ -645,21 +684,33 @@ export const MenuScreen = ({navigation}) => {
     if (!calendarToday) return undefined;
 
     let cancelled = false;
-    let interaction = null;
+    let idleHandle = null;
+    let idleKind = null;
     const timer = setTimeout(() => {
-      interaction = InteractionManager.runAfterInteractions(() => {
-        if (!cancelled) {
-          updateCalendarWidget(calendarToday, calendarLanguage);
-        }
-      });
+      const refreshWhenIdle = () => {
+        if (!cancelled) updateCalendarWidget(calendarToday, calendarLanguage);
+      };
+      // React Native 0.86 deprecates InteractionManager. Schedule the widget
+      // refresh when the JS thread is idle without delaying navigation.
+      if (typeof globalThis.requestIdleCallback === 'function') {
+        idleKind = 'idle';
+        idleHandle = globalThis.requestIdleCallback(refreshWhenIdle, {timeout: 3000});
+      } else {
+        idleKind = 'timeout';
+        idleHandle = setTimeout(refreshWhenIdle, 0);
+      }
     }, 1200);
 
     return () => {
       cancelled = true;
       clearTimeout(timer);
-      interaction?.cancel?.();
+      if (idleKind === 'idle' && typeof globalThis.cancelIdleCallback === 'function') {
+        globalThis.cancelIdleCallback(idleHandle);
+      } else if (idleKind === 'timeout') {
+        clearTimeout(idleHandle);
+      }
     };
-  }, [calendarToday, calendarLanguage, updateCalendarWidget]);
+  }, [calendarToday, calendarLanguage, calendarLocalToday, updateCalendarWidget]);
 
   const changeAppLanguage = async (language) => {
     const next = await setAppLanguage(language);
@@ -774,6 +825,16 @@ export const MenuScreen = ({navigation}) => {
     [rootCategories]
   );
 
+  // The user's order is separate from the server's editorial category order.
+  // Rehydrate on focus so an account sync from another device becomes visible.
+  useFocusEffect(useCallback(()=>{
+    let mounted=true;
+    getHomeCategoryOrder()
+      .then(order=>{if(mounted)setCategoryOrder(order);})
+      .catch(error=>console.warn('[menu order] load:',error?.message||error));
+    return ()=>{mounted=false;};
+  }, []));
+
   const getSubcategories = (category) => categories.filter((item) => item.parent === category.id);
 
   const openCategory = (category) => {
@@ -794,6 +855,88 @@ export const MenuScreen = ({navigation}) => {
     });
   };
 
+
+  const libraryCards = [
+    {key:'morning',title:t('menu.morningTitle'),subtitle:t('menu.morningSubtitle'),
+      symbol:'☀',iconSource:CATEGORY_ICONS.morning,artwork:homeArtwork.morning,
+      onPress:()=>navigation.navigate('PrayerRule',{slug:'molitvy-utrennie'})},
+    {key:'evening',title:t('menu.eveningTitle'),subtitle:t('menu.eveningSubtitle'),
+      symbol:'☾',iconSource:CATEGORY_ICONS.evening,artwork:homeArtwork.evening,
+      onPress:()=>navigation.navigate('PrayerRule',{slug:'molitvy-na-son-griadushchim'})},
+    {key:'akathists',title:t('menu.akathistsTitle'),subtitle:t('menu.akathistsSubtitle'),
+      symbol:'☦',iconSource:CATEGORY_ICONS.akathists,artwork:homeArtwork.akathists,
+      onPress:()=>navigation.navigate('AkathistList')},
+    {key:'canons',title:t('menu.canonsTitle'),subtitle:t('menu.canonsSubtitle'),
+      symbol:'▤',iconSource:CATEGORY_ICONS.canons,artwork:homeArtwork.canons,
+      onPress:()=>navigation.navigate('CanonList')},
+    {key:'communion',title:t('menu.communionTitle'),subtitle:t('menu.communionSubtitle'),
+      symbol:'♱',iconSource:CATEGORY_ICONS.communion,artwork:homeArtwork.communion,
+      onPress:()=>navigation.navigate('CommunionPreparation')},
+    {key:'psalter',title:t('menu.psalterTitle'),subtitle:t('menu.psalterSubtitle'),
+      symbol:'¶',iconSource:CATEGORY_ICONS.psalter,artwork:homeArtwork.psalter,
+      onPress:()=>navigation.navigate('Psalter')},
+    {key:'hours',title:t('menu.hoursTitle'),subtitle:t('menu.hoursSubtitle'),
+      symbol:'✦',iconSource:CATEGORY_ICONS.hours,artwork:homeArtwork.hours,
+      onPress:()=>navigation.navigate('Hours')},
+    {key:'prayer-learning',title:t('menu.learningTitle'),
+      subtitle:t('menu.learningSubtitle'),
+      symbol:'Ѣ',iconSource:CATEGORY_ICONS.learning,artwork:homeArtwork.learning,
+      onPress:()=>navigation.navigate('PrayerLearning')},
+    {key:'misc',title:t('menu.miscTitle'),subtitle:t('menu.miscSubtitle'),
+      symbol:'✦',iconSource:CATEGORY_ICONS.various,artwork:homeArtwork.various,
+      onPress:()=>navigation.navigate('MiscPrayers')},
+    {key:'bible',title:t('menu.bibleTitle'),subtitle:t('menu.bibleSubtitle'),
+      symbol:'▤',iconSource:CATEGORY_ICONS.bible,artwork:homeArtwork.bible,
+      onPress:()=>navigation.navigate('Bible')},
+    ...libraryCategories.map(category=>({
+      key:'category:'+String(category.id),
+      title:getLocalizedField(category,'name',calendarLanguage),
+      subtitle:getSubcategories(category).length>0
+        ?t('menu.sectionsCount',{count:getSubcategories(category).length}):t('common.open'),
+      symbol:'✦',
+      iconSource:resolveCategoryIcon(category.slug,category.name)||CATEGORY_ICONS.misc,
+      artwork:homeArtwork.misc,
+      onPress:()=>openCategory(category),
+    })),
+  ];
+  const orderedLibraryCards=mergeCategoryOrder(libraryCards,categoryOrder);
+  const categoryHeight=80*uiScale;
+  const categoryStride=(calendarLanguage === 'csl_traditional' ? Math.max((80*uiScale+8), categoryHeight+8) : (80*uiScale+8));
+
+  const startCategoryDrag=(key)=>{
+    dragOrderRef.current=orderedLibraryCards.map(card=>card.key);
+    dragDidMoveRef.current=false;
+    setDraggedCategoryKey(key);
+    setMovingCategory(true);
+  };
+  const previewCategoryDrag=(key,targetIndex)=>{
+    const original=dragOrderRef.current || orderedLibraryCards.map(card=>card.key);
+    const next=moveCategoryKeyToIndex(original,key,targetIndex);
+    if(next.join('|')===original.join('|'))return;
+    dragDidMoveRef.current=true;
+    dragOrderRef.current=next;
+    // React displays the new order immediately. Reanimated animates the
+    // displaced siblings; the held card stays under the finger.
+    setCategoryOrder(next);
+  };
+  const finishCategoryDrag=(key,targetIndex)=>{
+    const before=dragOrderRef.current || orderedLibraryCards.map(card=>card.key);
+    const finished=moveCategoryKeyToIndex(before,key,targetIndex);
+    const changed=dragDidMoveRef.current ||
+      finished.join('|')!==before.join('|');
+    dragOrderRef.current=null;
+    dragDidMoveRef.current=false;
+    setMovingCategory(false);
+    setDraggedCategoryKey(null);
+    if(!changed)return;
+    setCategoryOrder(finished);
+    // Persist on finger release, never on each hover.
+    saveHomeCategoryOrder(finished).catch(error=>
+      console.warn('[menu order] save:',error?.message||error));
+    queueAccountPreferencePatch({settings:{homeCategoryOrder:finished}})
+      .catch(error=>console.warn('[menu order] cloud:',error?.message||error));
+  };
+
   const makeReadingItem = (progress) => {
     if (progress.source_type === 'bible') {
       const info = progress.anchor_info || {};
@@ -811,10 +954,10 @@ export const MenuScreen = ({navigation}) => {
         type: t('reading.bible'),
         symbol: '☷',
         imageSource: artwork?.icon || null,
-        title: bibleContent.getDisplayName(book),
+        title: calendarLanguage === 'csl_traditional' ? getCslBibleBookName(book) : bibleContent.getDisplayName(book),
         position: verseNumber
-          ? t('reading.chapterVerse', {chapter: chapterNumber, verse: verseNumber})
-          : t('reading.chapter', {chapter: chapterNumber}),
+          ? t('reading.chapterVerse', {chapter: formatBibleNumber(calendarLanguage, chapterNumber), verse: formatBibleNumber(calendarLanguage, verseNumber)})
+          : t('reading.chapter', {chapter: formatBibleNumber(calendarLanguage, chapterNumber)}),
         onPress: () =>
           navigation.navigate('BibleChapter', {
             bookId: book.id,
@@ -836,13 +979,13 @@ export const MenuScreen = ({navigation}) => {
         position: info
           ? info.verse_number
             ? t('reading.kathismaPsalmVerse', {
-                kathisma: info.kathisma_number,
-                psalm: info.psalm_number,
-                verse: info.verse_number,
+                kathisma: formatBibleNumber(calendarLanguage, info.kathisma_number),
+                psalm: formatBibleNumber(calendarLanguage, info.psalm_number),
+                verse: formatBibleNumber(calendarLanguage, info.verse_number),
               })
             : t('reading.kathismaPsalm', {
-                kathisma: info.kathisma_number,
-                psalm: info.psalm_number,
+                kathisma: formatBibleNumber(calendarLanguage, info.kathisma_number),
+                psalm: formatBibleNumber(calendarLanguage, info.psalm_number),
               })
           : t('reading.continueSaved'),
         onPress: () => navigation.navigate('Psalter'),
@@ -894,7 +1037,7 @@ export const MenuScreen = ({navigation}) => {
 
       if (info) {
         const parts = [];
-        if (info.ode_number) parts.push(t('reading.ode', {number: info.ode_number}));
+        if (info.ode_number) parts.push(t('reading.ode', {number: formatBibleNumber(calendarLanguage, info.ode_number)}));
         if (info.heading) {
           parts.push(info.heading);
         } else if (info.section_type_display) {
@@ -924,14 +1067,14 @@ export const MenuScreen = ({navigation}) => {
       if (!rule) return null;
 
       const ruleItem = rule.items?.find((item) => Number(item.id) === Number(progress.anchor_id));
-      const position = ruleItem?.text?.title || ruleItem?.title || t('reading.continueRule');
+      const position = getProgressSectionTitle(ruleItem, calendarLanguage) || t('reading.continueRule');
 
       return {
         id: progress.id,
         type: t('reading.prayerRule'),
         symbol: '✦',
         iconSource: resolveCategoryIcon(rule.slug, rule.name) || CATEGORY_ICONS.canons,
-        title: getLocalizedField(rule, 'name', calendarLanguage),
+        title: getProgressEntityTitle(rule, 'name', calendarLanguage, t),
         position,
         onPress: () => navigation.navigate('PrayerRule', {slug: rule.slug}),
       };
@@ -983,6 +1126,13 @@ export const MenuScreen = ({navigation}) => {
   };
 
   const latestReading = activeReadings[0] || null;
+  const dailyQuoteBibleTarget = resolveDailyQuoteSource(dailyQuote);
+  const dailyQuoteText = String(getLocalizedField(dailyQuote, 'text', calendarLanguage) || '').trim();
+  const dailyQuoteDisplayText = dailyQuoteText
+    ? dailyQuoteText.startsWith('«') && dailyQuoteText.endsWith('»')
+      ? dailyQuoteText
+      : '«' + dailyQuoteText + '»'
+    : '';
 
   const toggleDailyQuoteSaved = async () => {
     const quoteText = getLocalizedField(dailyQuote, 'text', calendarLanguage);
@@ -1018,6 +1168,8 @@ export const MenuScreen = ({navigation}) => {
           source: quoteSource,
           reference: quoteReference,
           quote_date: dailyQuote.quote_date || dailyQuote.date || '',
+          quote_target: dailyQuote.target || null,
+          work: dailyQuote.work || '',
         },
       });
 
@@ -1064,6 +1216,7 @@ export const MenuScreen = ({navigation}) => {
           resizeMode="cover"
         >
           <ScrollView
+            scrollEnabled={!movingCategory}
             showsVerticalScrollIndicator={false}
             contentContainerStyle={[
               styles.content,
@@ -1080,6 +1233,7 @@ export const MenuScreen = ({navigation}) => {
                 styles.hero,
                 {
                   paddingTop: Math.max(insets.top + 8, 32),
+
                 },
               ]}
               imageStyle={styles.heroImage}
@@ -1087,16 +1241,19 @@ export const MenuScreen = ({navigation}) => {
               <LinearGradient
                 pointerEvents="none"
                 colors={[
-                  'rgba(255, 244, 222, 0)',
-                  'rgba(183, 138, 88, 0.18)',
-                  'rgba(183, 138, 88, 0.62)',
-                  '#D6B07C',
+                  'rgba(214, 176, 124, 0)',
+                  'rgba(214, 176, 124, 0.06)',
+                  'rgba(214, 176, 124, 0.16)',
+                  'rgba(214, 176, 124, 0.34)',
+                  'rgba(214, 176, 124, 0.68)',
                 ]}
-                locations={[0, 0.46, 0.76, 1]}
+                locations={[0, 0.35, 0.63, 0.84, 1]}
                 style={styles.heroBottomGradient}
               />
 
-              <View style={styles.heroTopActions}>
+              <View
+                style={styles.heroTopActions}
+              >
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel={t('menu.search')}
@@ -1109,15 +1266,15 @@ export const MenuScreen = ({navigation}) => {
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel={t('menu.notifications')}
-                  onPress={() => showPlaceholder(t('menu.notifications'))}
+                  onPress={() => { /* MOLITVOSLOV_LOCAL_REMINDERS_BELL_20261117 */ navigation.navigate('Notifications'); }}
                   style={({pressed}) => [styles.heroRoundAction, pressed && styles.pressed]}
                 >
                   <BellGlyph />
-                  <View style={styles.notificationDot} />
+                  {/* Уведомления не отмечаются непрочитанными заранее. */}
                 </Pressable>
               </View>
 
-              <View style={styles.heroQuoteContent}>
+              <View style={[styles.heroQuoteContent, {top: Math.max(insets.top + 49.5, 77.5)}]}>
                 <LinearGradient
                   pointerEvents="none"
                   colors={[
@@ -1147,15 +1304,23 @@ export const MenuScreen = ({navigation}) => {
                   end={{x: 0.5, y: 1}}
                   style={styles.heroQuoteScrollShade}
                 />
-                <View style={styles.heroQuoteHeading}>
-                  {/*<Text style={styles.heroQuoteMark}>❧</Text>*/}
-                  {/*<Text style={styles.heroQuoteLabel}>Цитата дня</Text>*/}
-                </View>
-
                 <View style={styles.quoteStaircase}>
-                  {!!getLocalizedField(dailyQuote, 'text', calendarLanguage) && (
-                    <Text style={styles.heroQuoteText}>
-                      {getLocalizedField(dailyQuote, 'text', calendarLanguage)}
+                  {!!dailyQuoteText && (
+                    <Text
+                      style={[
+                        styles.heroQuoteText,
+                        dailyQuoteText.length <= 65
+                          ? styles.heroQuoteTextShort
+                          : dailyQuoteText.length <= 105
+                            ? styles.heroQuoteTextMedium
+                            : null,
+                      ]}
+                      numberOfLines={9}
+                      adjustsFontSizeToFit
+                      minimumFontScale={0.72}
+                      ellipsizeMode="tail"
+                    >
+                      {dailyQuoteDisplayText}
                     </Text>
                   )}
                 </View>
@@ -1164,18 +1329,30 @@ export const MenuScreen = ({navigation}) => {
                   getLocalizedField(dailyQuote, 'reference', calendarLanguage) ||
                   getLocalizedField(dailyQuote, 'source', calendarLanguage)
                 ) && (
-                  <Text style={styles.heroQuoteSource}>
-                    {getLocalizedField(dailyQuote, 'reference', calendarLanguage) ||
-                      getLocalizedField(dailyQuote, 'source', calendarLanguage)}
-                  </Text>
+                  <Pressable
+                    accessibilityRole={dailyQuoteBibleTarget ? 'link' : undefined}
+                    accessibilityLabel={dailyQuoteBibleTarget ? t('common.open') : undefined}
+                    disabled={!dailyQuoteBibleTarget}
+                    hitSlop={6}
+                    onPress={() => openDailyQuoteSource(navigation, dailyQuote)}
+                  >
+                    <Text style={[styles.heroQuoteSource,
+                      dailyQuoteBibleTarget && styles.heroQuoteSourceLink]}>
+                      {getLocalizedField(dailyQuote, 'reference', calendarLanguage) ||
+                        getLocalizedField(dailyQuote, 'source', calendarLanguage)}
+                    </Text>
+                  </Pressable>
                 )}
 
                 <View style={styles.heroQuoteActions}>
                   <Pressable
                     onPress={toggleDailyQuoteSaved}
+                    accessibilityRole="button"
+                    accessibilityLabel={t(savedDailyQuote ? 'common.removeFromFavorites' : 'common.addToFavorites')}
+                    hitSlop={8}
                     style={({pressed}) => [styles.heroHeartButton, pressed && styles.pressed]}
                   >
-                    <SaveHeartIcon active={!!savedDailyQuote} size={20} tintColor="#F5DCA5" />
+                    <SaveHeartIcon active={!!savedDailyQuote} size={16} tintColor="#F5DCA5" />
                   </Pressable>
                   {/*  <Text style={styles.heroQuoteActionText}>*/}
                   {/*    {savedDailyQuote ? '' : ''}*/}
@@ -1211,7 +1388,7 @@ export const MenuScreen = ({navigation}) => {
                     <View style={styles.calendarTitleTextWrap}>
                       <View style={styles.calendarTitleLine}>
                         <Text
-                          style={styles.calendarTitle}
+                          style={[styles.calendarTitle, calendarLanguage === 'csl_traditional' && styles.calendarLabelTraditional]}
                           numberOfLines={1}
                           adjustsFontSizeToFit
                           minimumFontScale={0.82}
@@ -1223,7 +1400,7 @@ export const MenuScreen = ({navigation}) => {
                         <Text style={styles.calendarTitleArrow}>›</Text>
                       </View>
 
-                      <Text style={styles.calendarOpenHint}>{t('calendar.open')}</Text>
+                      <Text style={[styles.calendarOpenHint, calendarLanguage === 'csl_traditional' && styles.calendarHintTraditional]}>{t('calendar.open')}</Text>
                     </View>
                   </Pressable>
 
@@ -1237,7 +1414,7 @@ export const MenuScreen = ({navigation}) => {
                       ]}
                     >
                       <Text style={styles.calendarWidgetButtonIcon}>▣</Text>
-                      <Text style={styles.calendarWidgetButtonText}>{calendarCopy.onScreen}</Text>
+                      <Text style={[styles.heroQuoteActionText, styles.calendarWidgetButtonText, calendarLanguage === 'csl_traditional' && styles.calendarWidgetTraditional]} numberOfLines={1}>{calendarCopy.onScreen}</Text>
                     </Pressable>
                   </View>
                 </View>
@@ -1266,7 +1443,7 @@ export const MenuScreen = ({navigation}) => {
                       )}
 
                       <View style={styles.calendarFeastTextWrap}>
-                        <Text style={styles.calendarFeastLabel}>{t('calendar.memory')}</Text>
+                        <Text style={[styles.calendarFeastLabel, calendarLanguage === 'csl_traditional' && styles.calendarQuickLabelTraditional]}>{t('calendar.memory')}</Text>
 
                         <Text style={styles.calendarFeastTitle} numberOfLines={6}>
                           {calendarToday?.main_feast?.title ||
@@ -1283,7 +1460,7 @@ export const MenuScreen = ({navigation}) => {
                         onPress={openFullCalendar}
                         style={({pressed}) => [styles.calendarQuickItem, pressed && styles.pressed]}
                       >
-                        <Text style={styles.calendarQuickLabel}>{t('calendar.fast')}</Text>
+                        <Text style={[styles.calendarQuickLabel, calendarLanguage === 'csl_traditional' && styles.calendarQuickLabelTraditional]}>{t('calendar.fast')}</Text>
 
                         <Text style={styles.calendarQuickText} >
                           {formatFast(calendarToday, calendarLanguage) || calendarCopy.noFastData}
@@ -1304,8 +1481,8 @@ export const MenuScreen = ({navigation}) => {
                             pressed && styles.pressed,
                           ]}
                         >
-                          <Text style={styles.calendarQuickLabel}>
-                            {calendarLanguage === 'uk' ? 'СТАРОЗАВІТНІ ЧИТАННЯ' : 'ВЕТХОЗАВЕТНЫЕ ЧТЕНИЯ'}
+                          <Text style={[styles.calendarQuickLabel, calendarLanguage === 'csl_traditional' && styles.calendarQuickLabelTraditional]}>
+                            {t('calendar.oldTestamentReadings')}
                           </Text>
                           <CalendarReadingText
                             key={`old-testament-${toCalendarDate(calendarSelectedDate)}`}
@@ -1324,7 +1501,7 @@ export const MenuScreen = ({navigation}) => {
                           pressed && styles.pressed,
                         ]}
                       >
-                        <Text style={styles.calendarQuickLabel}>{t('calendar.gospel')}</Text>
+                        <Text style={[styles.calendarQuickLabel, calendarLanguage === 'csl_traditional' && styles.calendarQuickLabelTraditional]}>{t('calendar.gospel')}</Text>
 
                         <CalendarReadingText
                           key={`gospel-${toCalendarDate(calendarSelectedDate)}`}
@@ -1346,7 +1523,7 @@ export const MenuScreen = ({navigation}) => {
                           pressed && styles.pressed,
                         ]}
                       >
-                        <Text style={styles.calendarQuickLabel}>{t('calendar.apostle')}</Text>
+                        <Text style={[styles.calendarQuickLabel, calendarLanguage === 'csl_traditional' && styles.calendarQuickLabelTraditional]}>{t('calendar.apostle')}</Text>
 
                         <CalendarReadingText
                           key={`apostle-${toCalendarDate(calendarSelectedDate)}`}
@@ -1383,7 +1560,7 @@ export const MenuScreen = ({navigation}) => {
                           pressed && styles.pressed,
                         ]}
                       >
-                        <Text style={styles.miniCalendarMonth} numberOfLines={1}>
+                        <Text style={[styles.miniCalendarMonth, calendarLanguage === 'csl_traditional' && styles.miniCalendarMonthTraditional]} numberOfLines={1}>
                           {calendarSnapshot.monthTitle}
                         </Text>
                       </Pressable>
@@ -1407,6 +1584,7 @@ export const MenuScreen = ({navigation}) => {
                           style={[
                             styles.miniCalendarWeekday,
                             index >= 5 && styles.miniCalendarWeekend,
+                            calendarLanguage === 'csl_traditional' && styles.miniCalendarWeekdayTraditional,
                           ]}
                         >
                           {weekday}
@@ -1451,9 +1629,10 @@ export const MenuScreen = ({navigation}) => {
                                   appearance && styles.miniCalendarDayMarked,
                                   cell.today && styles.miniCalendarDayToday,
                                   cell.selected && styles.miniCalendarDaySelected,
+                                  calendarLanguage === 'csl_traditional' && styles.miniCalendarDayTraditional,
                                 ]}
                               >
-                                {cell.day}
+                                {displayCalendarNumber(cell.day, calendarLanguage)}
                               </Text>
                             </View>
                           </Pressable>
@@ -1471,7 +1650,7 @@ export const MenuScreen = ({navigation}) => {
                     style={({pressed}) => [styles.readingHeadingWrap, pressed && styles.pressed]}
                   >
                     <Text style={styles.readingBook}>▤</Text>
-                    <Text style={[styles.readingSectionTitle, {fontSize: 17 * uiScale}]}>{t('menu.continueReading')}</Text>
+                    <Text style={[styles.readingSectionTitle, {fontSize: 17 * uiScale}, traditionalUiTextStyle(calendarLanguage, 17 * uiScale, 25 * uiScale)]}>{t('menu.continueReading')}</Text>
                   </Pressable>
 
                   {!!activeReadings.length && (
@@ -1480,7 +1659,7 @@ export const MenuScreen = ({navigation}) => {
                       onPress={() => navigation.navigate('ContinueReading')}
                       style={({pressed}) => [styles.openReadings, pressed && styles.pressed]}
                     >
-                      <Text style={styles.openReadingsText}>{t('common.open')}</Text>
+                      <Text style={[styles.openReadingsText, traditionalUiTextStyle(calendarLanguage, 13 * uiScale, 20 * uiScale)]}>{t('common.open')}</Text>
                       <Text style={styles.openReadingsArrow}>›</Text>
                     </Pressable>
                   )}
@@ -1509,7 +1688,7 @@ export const MenuScreen = ({navigation}) => {
                       </View>
 
                       <View style={styles.latestReadingText}>
-                        <Text style={[styles.latestReadingTitle, {fontSize: 16 * uiScale}]} numberOfLines={2}>
+                        <Text style={[styles.latestReadingTitle, {fontSize: 16 * uiScale}, traditionalUiTextStyle(calendarLanguage, 16 * uiScale, 24 * uiScale)]} numberOfLines={2}>
                           {latestReading.title}
                         </Text>
 
@@ -1529,7 +1708,7 @@ export const MenuScreen = ({navigation}) => {
                           </Text>
                         </View>
 
-                        <Text style={styles.latestReadingPosition} numberOfLines={2}>
+                        <Text style={[styles.latestReadingPosition, traditionalUiTextStyle(calendarLanguage, 12 * uiScale, 19 * uiScale)]} numberOfLines={2}>
                           {latestReading.position}
                         </Text>
                       </View>
@@ -1545,110 +1724,40 @@ export const MenuScreen = ({navigation}) => {
                   </View>
                 ) : (
                   <View style={styles.emptyReading}>
-                    <Text style={styles.emptyReadingTitle}>{t('menu.lastReadingEmpty')}</Text>
-                    <Text style={styles.emptyReadingText}>{t('menu.lastReadingHint')}</Text>
+                    <Text style={[styles.emptyReadingTitle, traditionalUiTextStyle(calendarLanguage, 15 * uiScale, 22 * uiScale)]}>{t('menu.lastReadingEmpty')}</Text>
+                    <Text style={[styles.emptyReadingText, traditionalUiTextStyle(calendarLanguage, 12 * uiScale, 20 * uiScale)]}>{t('menu.lastReadingHint')}</Text>
                   </View>
                 )}
               </View>
 
-              <View style={styles.libraryList}>
-                <DecorativeCard
-                  title={t('menu.morningTitle')}
-                  subtitle={t('menu.morningSubtitle')}
-                  symbol="☀"
-                  iconSource={CATEGORY_ICONS.morning}
-                  artwork={homeArtwork.morning}
-                  onPress={() => navigation.navigate('PrayerRule', {slug: 'molitvy-utrennie'})}
-                />
-                <DecorativeCard
-                  title={t('menu.eveningTitle')}
-                  subtitle={t('menu.eveningSubtitle')}
-                  symbol="☾"
-                  iconSource={CATEGORY_ICONS.evening}
-                  artwork={homeArtwork.evening}
-                  onPress={() =>
-                    navigation.navigate('PrayerRule', {slug: 'molitvy-na-son-griadushchim'})
-                  }
-                />
-                <DecorativeCard
-                  title={t('menu.akathistsTitle')}
-                  subtitle={t('menu.akathistsSubtitle')}
-                  symbol="☦"
-                  iconSource={CATEGORY_ICONS.akathists}
-                  artwork={homeArtwork.akathists}
-                  onPress={() => navigation.navigate('AkathistList')}
-                />
-                <DecorativeCard
-                  title={t('menu.canonsTitle')}
-                  subtitle={t('menu.canonsSubtitle')}
-                  symbol="▤"
-                  iconSource={CATEGORY_ICONS.canons}
-                  artwork={homeArtwork.canons}
-                  onPress={() => navigation.navigate('CanonList')}
-                />
-                <DecorativeCard
-                  title={t('menu.communionTitle')}
-                  subtitle={t('menu.communionSubtitle')}
-                  symbol="♱"
-                  iconSource={CATEGORY_ICONS.communion}
-                  artwork={homeArtwork.communion}
-                  onPress={() => navigation.navigate('CommunionPreparation')}
-                />
-                <DecorativeCard
-                  title={t('menu.psalterTitle')}
-                  subtitle={t('menu.psalterSubtitle')}
-                  symbol="¶"
-                  iconSource={CATEGORY_ICONS.psalter}
-                  artwork={homeArtwork.psalter}
-                  onPress={() => navigation.navigate('Psalter')}
-                />
-                <DecorativeCard
-                  title={t('menu.miscTitle')}
-                  subtitle={t('menu.miscSubtitle')}
-                  symbol="✦"
-                  iconSource={CATEGORY_ICONS.misc}
-                  artwork={homeArtwork.misc}
-                  onPress={() => navigation.navigate('MiscPrayers')}
-                />
-                <DecorativeCard
-                  title={t('menu.bibleTitle')}
-                  subtitle={t('menu.bibleSubtitle')}
-                  iconSource={CATEGORY_ICONS.bible}
-                  artwork={homeArtwork.bible}
-                  onPress={() => navigation.navigate('Bible')}
-                />
+              <View style={[styles.libraryList, {
+                height: Math.max(0, orderedLibraryCards.length*categoryStride-8),
+              }]}>
+                {orderedLibraryCards.map((category,index)=>(
+                  <ReorderableCategoryCard
+                    key={category.key}
+                    itemKey={category.key}
+                    index={index}
+                    total={orderedLibraryCards.length}
+                    rowHeight={categoryStride}
+                    cardHeight={Math.max((80*uiScale), categoryHeight)}
+                    activeKey={draggedCategoryKey}
+                    onDragStart={startCategoryDrag}
+                    onDragHover={previewCategoryDrag}
+                    onDragFinish={finishCategoryDrag}
+                  >
+                    <DecorativeCard
+                      title={category.title}
+                      subtitle={category.subtitle}
+                      symbol={category.symbol}
+                      iconSource={category.iconSource}
+                      artwork={category.artwork}
+                      onPress={category.onPress}
+                      disabled={movingCategory}
+                    />
+                  </ReorderableCategoryCard>
+                ))}
               </View>
-
-              {!!libraryCategories.length && (
-                <View style={styles.extraSection}>
-                  <View style={styles.extraHeader}>
-                    <Text style={styles.extraTitle}>{t('menu.otherSections')}</Text>
-                    <Text style={styles.extraOrnament}>✦</Text>
-                  </View>
-
-                  {libraryCategories.map((category) => (
-                    <Pressable
-                      key={category.id}
-                      onPress={() => openCategory(category)}
-                      style={({pressed}) => [styles.extraCard, pressed && styles.pressed]}
-                    >
-                      <View>
-                        <Text style={[styles.extraCardTitle, {fontSize: 16 * uiScale}]}>
-                          {getLocalizedField(category, 'name', calendarLanguage)}
-                        </Text>
-                        <Text style={[styles.extraCardSubtitle, {fontSize: 11 * uiScale}]}>
-                          {getSubcategories(category).length > 0
-                            ? t('menu.sectionsCount', {
-                                count: getSubcategories(category).length,
-                              })
-                            : t('common.open')}
-                        </Text>
-                      </View>
-                      <Text style={styles.extraArrow}>›</Text>
-                    </Pressable>
-                  ))}
-                </View>
-              )}
 
               {!!error && (
                 <View style={styles.errorCard}>
@@ -1696,7 +1805,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
   hero: {
-    minHeight: 305,
+    minHeight: 360,
     justifyContent: 'flex-start',
     paddingHorizontal: 18,
     paddingBottom: 22,
@@ -1706,7 +1815,6 @@ const styles = StyleSheet.create({
 
   heroImage: {
     opacity: 1,
-    maxHeight: 320,
   },
 
   heroQuoteShade: {
@@ -1730,7 +1838,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    height: 92,
+    height: 142,
   },
 
   heroTopActions: {
@@ -1796,8 +1904,12 @@ const styles = StyleSheet.create({
   },
 
   quoteStaircase: {
+    flex: 1,
+    minHeight: 0,
     width: '100%',
     alignItems: 'flex-start',
+    // Keep the quotation centered in the available upper banner area.
+    justifyContent: 'center',
   },
 
   quoteLine1: {
@@ -1912,17 +2024,17 @@ const styles = StyleSheet.create({
   heroQuoteActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 9,
-    marginTop: 10,
+    gap: 7,
+    marginTop: 8,
   },
 
   heroQuoteActionButton: {
-    minHeight: 38,
+    minHeight: 30,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 5,
-    borderRadius: 10,
+    paddingHorizontal: 8,
+    borderRadius: 8,
     borderWidth: 1,
     borderColor: '#F7DFB4',
 
@@ -1935,22 +2047,23 @@ const styles = StyleSheet.create({
 
   heroQuoteActionText: {
     marginLeft: 0,
-    padding: 5,
+    paddingHorizontal: 3,
+    paddingVertical: 3,
     color: '#F7DFB4',
     fontFamily: 'serif',
-    fontSize: 13,
-    lineHeight: 17,
-    fontWeight: '800',
+    fontSize: 11,
+    lineHeight: 15,
+    fontWeight: '700',
   },
   heroHeartButton: {
-    width: 42,
-    height: 38,
+    width: 32,
+    height: 30,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 0,
     paddingVertical: 0,
-    borderRadius: '50%',
-    borderWidth: 1.5,
+    borderRadius: 16,
+    borderWidth: 1,
     borderColor: 'rgba(255, 232, 190, 0.65)',
 
     backgroundColor: 'rgba(45, 25, 14, 0.28)',
@@ -2103,7 +2216,7 @@ const styles = StyleSheet.create({
   },
 
   calendarWidgetButton: {
-    height: 30,
+    minHeight: 30,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -2123,11 +2236,9 @@ const styles = StyleSheet.create({
   },
 
   calendarWidgetButtonText: {
+    // Reuse heroQuoteActionText typography (15px line height and padding)
+    // so Cyrillic descenders, particularly 'р', cannot be clipped.
     color: '#7B4F2A',
-    fontFamily: 'serif',
-    fontSize: 11,
-    lineHeight: 10,
-    fontWeight: '700',
   },
 
   calendarLanguageSwitch: {
@@ -2351,6 +2462,34 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 
+  miniCalendarMonthTraditional: {
+    fontFamily: 'Ponomar', fontSize: 12, lineHeight: 18, fontWeight: '400',
+    includeFontPadding: false,
+  },
+  miniCalendarWeekdayTraditional: {
+    fontFamily: 'Ponomar', fontSize: 11, lineHeight: 16, fontWeight: '400',
+    includeFontPadding: false,
+  },
+  miniCalendarDayTraditional: {
+    fontFamily: 'Ponomar', fontSize: 11, lineHeight: 16,
+    includeFontPadding: false,
+  },
+  calendarLabelTraditional: {
+    fontFamily: 'Ponomar', fontSize: 16, lineHeight: 23, fontWeight: '400',
+    includeFontPadding: false,
+  },
+  calendarHintTraditional: {
+    fontFamily: 'Ponomar', fontSize: 11, lineHeight: 16,
+    includeFontPadding: false,
+  },
+  calendarQuickLabelTraditional: {
+    fontFamily: 'Ponomar', fontSize: 11, lineHeight: 16, fontWeight: '400',
+    includeFontPadding: false,
+  },
+  calendarWidgetTraditional: {
+    fontFamily: 'Ponomar', fontSize: 12, lineHeight: 18, fontWeight: '400',
+    includeFontPadding: false,
+  },
   miniCalendarWeekdays: {
     flexDirection: 'row',
 
@@ -2644,7 +2783,7 @@ const styles = StyleSheet.create({
   },
   libraryList: {
     marginTop: 11,
-    gap: 8,
+    position: 'relative',
   },
   libraryCard: {
     position: 'relative',
@@ -2817,38 +2956,52 @@ const styles = StyleSheet.create({
   },
   heroQuoteContent: {
     position: 'absolute',
+    // Short quotations stay near the bottom; long quotations expand upward.
+    justifyContent: 'flex-end',
     // alignSelf: 'flex-start',
     // maxWidth: '89%',
-    paddingVertical: 7,
+    paddingVertical: 9,
     left: 18,
     right: 18,
-    bottom: 42,
-    paddingHorizontal: 5,
+    bottom: 32,
+    paddingHorizontal: 0,
     zIndex: 3,
   },
 
   heroQuoteScrollShade: {
     position: 'absolute',
-    top: -10,
-    bottom: -8,
-    left: -26,
-    right: -54,
-    borderRadius: 28,
+    top: -25,
+    bottom: -20,
+    left: -18,
+    right: -18,
+    borderRadius: 18,
   },
 
   heroQuoteText: {
-    color: '#F8E7C5',
+    color: '#FFF5E4',
+    fontFamily: 'serif',
+    fontStyle: 'italic',
+    fontWeight: '500',
+    fontSize: 17,
+    lineHeight: 21,
+    letterSpacing: 0.1,
 
-    fontFamily: 'Ponomar',
-    fontSize: 19,
-    lineHeight: 24,
-
-    textShadowColor: 'rgba(28, 15, 8, 0.80)',
+    textShadowColor: 'rgba(16, 9, 6, 0.94)',
     textShadowOffset: {
       width: 0,
       height: 1,
     },
-    textShadowRadius: 2,
+    textShadowRadius: 2.7,
+  },
+
+  heroQuoteTextShort: {
+    fontSize: 22,
+    lineHeight: 28,
+  },
+
+  heroQuoteTextMedium: {
+    fontSize: 20,
+    lineHeight: 26,
   },
 
   heroQuoteInitial: {
@@ -2857,8 +3010,12 @@ const styles = StyleSheet.create({
     lineHeight: 24,
   },
 
+  heroQuoteSourceLink: {
+    textDecorationLine: 'underline',
+    textDecorationColor: '#E5C58F',
+  },
   heroQuoteSource: {
-    marginTop: 5,
+    marginTop: 6,
 
     color: '#E5C58F',
     fontFamily: 'serif',

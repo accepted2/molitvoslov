@@ -11,10 +11,10 @@ import {
 import {useFocusEffect} from '@react-navigation/native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {StatusBar} from 'expo-status-bar';
-import {LinearGradient} from 'expo-linear-gradient';
 import {AppBackground} from '../components/layout/AppBackground';
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
 import {BottomNav} from '../components/navigation/BottomNav';
+import {Ionicons} from '@expo/vector-icons';
 import {SaveHeartIcon} from '../components/icons/SaveHeartIcon';
 import {contentApi as api} from '../services/contentApi';
 import {subscribeToContentUpdates} from '../services/contentStore';
@@ -22,14 +22,17 @@ import {deleteSavedItem, getSavedItems, saveItem} from '../services/savedItems';
 import {colors} from '../theme';
 import {useLanguage} from '../context/LanguageContext';
 import {getLocalizedField} from '../services/localizedContent';
+import {shareContent} from '../services/contentSharing';
+import {ContentContextMenu} from '../components/share/ContentContextMenu';
 import {LocalSearchField, filterByTitle} from '../components/search/LocalSearchField';
 
 export const AkathistListScreen = ({navigation}) => {
   const {language, t} = useLanguage();
   const insets = useSafeAreaInsets();
-  const headerHeight = insets.top + 56;
+  const [headerHeight, setHeaderHeight] = useState(insets.top + 56);
 
   const [akathists, setAkathists] = useState([]);
+  const [contextItem,setContextItem]=useState(null);
   const [savedAkathists, setSavedAkathists] = useState([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState(''); // MOLITVOSLOV_CATEGORY_TITLE_SEARCH_V1
@@ -151,20 +154,11 @@ export const AkathistListScreen = ({navigation}) => {
           contentContainerStyle={[
             styles.content,
             {
-              paddingTop: headerHeight + 20,
+              paddingTop: headerHeight + 12,
               paddingBottom: 80 + insets.bottom,
             },
           ]}
           keyboardShouldPersistTaps="handled"
-          ListHeaderComponent={
-            <View style={styles.localSearch}>
-              <LocalSearchField
-                value={query}
-                onChangeText={setQuery}
-                placeholder="Поиск акафиста по названию"
-              />
-            </View>
-          }
           renderItem={({item}) => {
             const saved = !!getSavedAkathist(item.id);
 
@@ -174,23 +168,37 @@ export const AkathistListScreen = ({navigation}) => {
                   style={styles.itemMain}
                   activeOpacity={0.7}
                   onPress={() => handlePress(item)}
+                  onLongPress={() => setContextItem(item)}
+                  delayLongPress={340}
                 >
                   <Text style={styles.title}>{getLocalizedField(item, 'title', language)}</Text>
 
                   <Text style={styles.arrow}>›</Text>
                 </TouchableOpacity>
 
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={
-                    saved ? t('common.removeFromFavorites') : t('common.addFavorite')
-                  }
-                  hitSlop={8}
-                  onPress={() => toggleFavorite(item)}
-                  style={({pressed}) => [styles.favoriteButton, pressed && styles.pressed]}
-                >
-                  <SaveHeartIcon active={saved} size={20} />
-                </Pressable>
+                <View style={styles.itemActions}>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={saved ? t('common.removeFromFavorites') : t('common.addFavorite')}
+                    hitSlop={6}
+                    onPress={() => toggleFavorite(item)}
+                    style={({pressed}) => [styles.favoriteButton, pressed && styles.pressed]}
+                  >
+                    <SaveHeartIcon active={saved} size={19} />
+                  </Pressable>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Поделиться акафистом"
+                    hitSlop={6}
+                    onPress={() => shareContent({
+                      title:getLocalizedField(item,'title',language),
+                      screen:'Akathist',params:{akathistId:item.id,slug:item.slug},
+                    })}
+                    style={({pressed}) => [styles.favoriteButton, pressed && styles.pressed]}
+                  >
+                    <Ionicons name="share-social-outline" size={19} color="#765238" />
+                  </Pressable>
+                </View>
               </View>
             );
           }}
@@ -201,60 +209,32 @@ export const AkathistListScreen = ({navigation}) => {
           }
         />
 
-        <View
-          pointerEvents="box-none"
-          style={[
-            styles.fixedHeader,
-            {
-              height: headerHeight + 26,
-            },
-          ]}
-        >
-          <LinearGradient
-            pointerEvents="none"
-            colors={[
-              'rgba(239, 211, 160, 0.94)',
-              'rgba(239, 211, 160, 0.90)',
-              'rgba(239, 211, 160, 0.72)',
-              'rgba(239, 211, 160, 0.34)',
-              'rgba(239, 211, 160, 0)',
-            ]}
-            locations={[0, 0.48, 0.66, 0.84, 1]}
-            style={StyleSheet.absoluteFill}
-          />
-
-          <View
-            style={[
-              styles.headerContent,
-              {
-                height: headerHeight,
-                paddingTop: insets.top,
-              },
-            ]}
-          >
-            <Pressable
-              hitSlop={12}
-              onPress={() => navigation.goBack()}
-              style={({pressed}) => [styles.backButton, pressed && styles.pressed]}
-            >
-              <Text style={styles.backArrow}>‹</Text>
-            </Pressable>
-
-            <View style={styles.headerTitleWrap}>
-              <Text style={styles.headerTitle}>{t('menu.akathistsTitle')}</Text>
-
-              <View style={styles.headerOrnament}>
-                <View style={styles.headerLine} />
-
-                <Text style={styles.headerMark}>✦</Text>
-
-                <View style={styles.headerLine} />
-              </View>
-            </View>
-          </View>
-        </View>
+        <FixedSectionHeader
+          title={t('menu.akathistsTitle')}
+          navigation={navigation}
+          topInset={insets.top}
+          onHeaderHeightChange={setHeaderHeight}
+          rightContent={
+            <LocalSearchField
+              compact
+              value={query}
+              onChangeText={setQuery}
+              placeholder="Поиск акафиста"
+            />
+          }
+        />
 
         <BottomNav navigation={navigation} active={null} />
+        <ContentContextMenu
+          visible={!!contextItem}
+          title={contextItem?getLocalizedField(contextItem,'title',language):''}
+          onClose={()=>setContextItem(null)}
+          onOpen={contextItem ? ()=>handlePress(contextItem) : null}
+          onShare={contextItem ? ()=>shareContent({
+            title:getLocalizedField(contextItem,'title',language),
+            screen:'Akathist',params:{akathistId:contextItem.id,slug:contextItem.slug},
+          }) : null}
+        />
       </View>
     </AppBackground>
   );
@@ -266,7 +246,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
 
-  localSearch: {paddingHorizontal: 10, paddingBottom: 12},
   listContent: {
     paddingBottom: 18,
   },
@@ -402,8 +381,12 @@ const styles = StyleSheet.create({
     lineHeight: 25,
   },
 
+  itemActions:{flexDirection:'row',alignSelf:'stretch',alignItems:'center',
+    borderLeftWidth:1,borderLeftColor:'rgba(126,82,38,0.24)',
+    backgroundColor:'rgba(238,220,192,0.48)',paddingHorizontal:3},
   favoriteButton: {
-    width: 42,
+    width: 34,
+    minHeight:40,
 
     alignItems: 'center',
     justifyContent: 'center',

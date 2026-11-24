@@ -1,11 +1,14 @@
 import {getCalendarBibleTranslation, saveCalendarBibleTranslation} from '../services/bibleTranslationPreference';
 import React, {useEffect, useRef, useState} from 'react';
 
-import {ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View} from 'react-native';
+import {ActivityIndicator, Alert, Linking, Pressable, ScrollView, StyleSheet, Text, TextInput, View} from 'react-native';
+import Ionicons from '@expo/vector-icons/Ionicons';
 
 import {SafeAreaView} from 'react-native-safe-area-context';
 
-import {getCurrentBackendUser, deleteBackendAccount} from '../services/backendAuth';
+import {getCurrentBackendUser, deleteBackendAccount, API_BASE_URL} from '../services/backendAuth';
+import {getCachedBackendUser, getApiToken} from '../services/backendAuth';
+
 
 import {signInWithGoogle, signOutFromGoogle} from '../services/googleAuth';
 
@@ -29,20 +32,43 @@ import {resolveReaderAppearance} from '../services/scopedReaderAppearance';
 import {queueAccountPreferencePatch, syncAccountPreferences} from '../services/accountPreferencesSync';
 import {subscribeReadingSettings} from '../services/readerPreferences';
 import {useInterfaceScale} from '../context/InterfaceScaleContext';
+import {traditionalUiTextStyle} from '../services/traditionalUiTypography';
+import {ProjectSupportSection} from '../components/settings/ProjectSupportSection';
 
 const MODE_CHOICES = [
-  {value: READER_LANGUAGE_MODES.CHURCH, label: 'Церковнославянский'},
-  {value: READER_LANGUAGE_MODES.RUSSIAN, label: 'Русский'},
-  {value: READER_LANGUAGE_MODES.BOTH, label: 'Церковнославянский + русский'},
-  {value: READER_LANGUAGE_MODES.TRADITIONAL, label: 'Церковнославянский традиционный'},
+  {value: READER_LANGUAGE_MODES.CHURCH, labelKey: 'modeChurch'},
+  {value: READER_LANGUAGE_MODES.RUSSIAN, labelKey: 'modeRussian'},
+  {value: READER_LANGUAGE_MODES.BOTH, labelKey: 'modeBoth'},
+  {value: READER_LANGUAGE_MODES.TRADITIONAL, labelKey: 'modeTraditional'},
+];
+const INTERFACE_LANG_CHOICES = [
+  {value: 'ru', label: 'Русский'},
+  {value: 'uk', label: 'Українська'},
+  {value: 'csl_traditional', label: 'Церко́внославѧ́нскїй традицїо́нный'},
 ];
 const PALETTES = [
-  {value: 'parchment', label: 'Пергамент', color: '#FFF4DE'},
-  {value: 'warm', label: 'Тёплый коричневый', color: '#DEBE94'},
-  {value: 'ivory', label: 'Слоновая кость', color: '#FFFDF3'},
-  {value: 'night', label: 'Ночная', color: '#29231F'},
-  {value: 'custom', label: 'Своя', color: '#E5D6C1'},
+  {value: 'parchment', labelKey: 'paletteParchment', color: '#FFF4DE'},
+  {value: 'warm', labelKey: 'paletteWarm', color: '#DEBE94'},
+  {value: 'ivory', labelKey: 'paletteIvory', color: '#FFFDF3'},
+  {value: 'night', labelKey: 'paletteNight', color: '#29231F'},
+  {value: 'custom', labelKey: 'paletteCustom', color: '#E5D6C1'},
 ];
+
+// The bottom navigation resets its stack when changing tabs, so AccountScreen
+// mounts again every time. Preserve only display state across those mounts;
+// SecureStore remains the source of truth for the actual session token.
+const ACCOUNT_PROFILE_REFRESH_INTERVAL_MS = 5 * 60 * 1000;
+let displayedAccountUser = null;
+let accountCacheInitialized = false;
+let lastProfileRefreshAt = 0;
+let accountSessionVersion = 0;
+
+const formatAccountUser = user => user?.id ? ({
+  id: user.id,
+  email: user.email,
+  name: user.name || user.first_name || user.username,
+  photo: user.picture_url || user.picture || user.photo || null,
+}) : null;
 
 export const AccountScreen = ({navigation}) => {
   const [calendarBibleTranslationCode, setCalendarBibleTranslationCode] = React.useState('rst');
@@ -63,12 +89,13 @@ export const AccountScreen = ({navigation}) => {
     saveCalendarBibleTranslation(code).catch(console.warn);
   };
 
-  const {language, setLanguage} = useLanguage();
+  const {language, setLanguage, t} = useLanguage();
   const [readingSettings, setReadingSettings] = useState(DEFAULT_READING_SETTINGS);
   const readingSettingsRef = useRef(DEFAULT_READING_SETTINGS);
   const [showColorPicker, setShowColorPicker] = useState(null);
   const [fontSliderWidth, setFontSliderWidth] = useState(200);
   const uiScale = useInterfaceScale();
+  const cslText = (size, lineHeight) => traditionalUiTextStyle(language, size * uiScale, (lineHeight || size * 1.45) * uiScale);
   useEffect(() => {
     let active = true;
     const apply = settings => {
@@ -121,54 +148,126 @@ export const AccountScreen = ({navigation}) => {
       fontSize: Math.max(14, Math.min(28, Math.round(14 + 14 * position / Math.max(fontSliderWidth, 1)))),
     });
   };
-  const [googleUser, setGoogleUser] = useState(null);
+  const [googleUser, setGoogleUser] = useState(() => displayedAccountUser);
 
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => !accountCacheInitialized);
 
   const [googleLoading, setGoogleLoading] = useState(false);
 
   const [googleError, setGoogleError] = useState('');
   const [deletingAccount, setDeletingAccount] = useState(false);
+  const [sourcesExpanded,setSourcesExpanded] = useState(false);
+  const [settingsCloudStatus,setSettingsCloudStatus]=useState('');
+  const openPolicyPage = path => Linking.openURL(API_BASE_URL + '/api/' + path)
+    .catch(error => Alert.alert(t('accountSettings.pageError'),error?.message||t('accountSettings.pageTryLater')));
+  const verifyCloudSettings = async () => {
+    setSettingsCloudStatus(t('accountSettings.syncChecking'));
+    try {
+      const result=await syncAccountPreferences();
+      setSettingsCloudStatus(result?.success
+        ? result.pending?t('accountSettings.syncPending'):t('accountSettings.syncComplete')
+        : result?.reason === 'reauth-required'
+          ? t('accountSettings.syncRelogin')
+          : t('accountSettings.syncUnavailable',{reason:result?.reason||t('accountSettings.syncOffline')}));
+    } catch(error) {
+      setSettingsCloudStatus(t('accountSettings.syncError',{reason:error?.message||t('accountSettings.syncTryLater')}));
+    }
+  };
   const deleteAccount = () => Alert.alert(
-    'Удалить аккаунт?',
-    'Серверный аккаунт, избранное, прогресс чтения, помянники и личные молитвословы будут удалены без возможности восстановления. Локальные данные на устройстве могут сохраниться.',
-    [{text: 'Отмена', style: 'cancel'}, {text: 'Удалить навсегда', style: 'destructive', onPress: async () => {
+    t('accountSettings.deleteAccountTitle'),
+    t('accountSettings.deleteAccountDescription'),
+    [{text: t('accountSettings.cancel'), style: 'cancel'}, {text: t('accountSettings.deleteForever'), style: 'destructive', onPress: async () => {
       setDeletingAccount(true);
       try {
-        await deleteBackendAccount();
+        const result=await deleteBackendAccount();
+        await signOutFromGoogle().catch(error=>console.warn('[account] Google signout:',error?.message||error));
+        accountSessionVersion += 1;
+        accountCacheInitialized = true;
+        displayedAccountUser = null;
+        lastProfileRefreshAt = 0;
         setGoogleUser(null);
-        Alert.alert('Аккаунт удалён', 'Серверный аккаунт и связанные с ним данные удалены.');
+        setLoading(false);
+        setSettingsCloudStatus('');
+        Alert.alert(t('accountSettings.deletedTitle'),result.localClean
+          ? t('accountSettings.deletedAll')
+          : t('accountSettings.deletedPartial'));
       } catch (error) {
-        Alert.alert('Ошибка удаления', error.message || 'Проверьте подключение к интернету.');
+        Alert.alert(t('accountSettings.deleteError'), error.message || t('accountSettings.checkInternet'));
       } finally { setDeletingAccount(false); }
     }}]
   );
 
   useEffect(() => {
+    let active = true;
+    const version = accountSessionVersion;
+    const stillCurrent = () => active && version === accountSessionVersion;
+    const showUser = user => {
+      if (!stillCurrent()) return;
+      const display = formatAccountUser(user);
+      displayedAccountUser = display;
+      setGoogleUser(display);
+    };
+
     const loadUser = async () => {
       try {
-        const backendUser = await getCurrentBackendUser();
+        // Restoring a stored profile is fast and local. A cached profile is
+        // never proof of an active session unless its token also exists.
+        const [token, cached] = await Promise.all([
+          getApiToken(),
+          getCachedBackendUser(),
+        ]);
+        if (!stillCurrent()) return;
 
-        if (backendUser) {
-          setGoogleUser({
-            id: backendUser.id,
-
-            email: backendUser.email,
-
-            name: backendUser.name || backendUser.first_name || backendUser.username,
-
-            photo: backendUser.picture_url || backendUser.picture || null,
-          });
+        accountCacheInitialized = true;
+        if (!token) {
+          lastProfileRefreshAt = 0;
+          showUser(null);
+          setLoading(false);
+          return;
         }
-      } catch (err) {
-        console.error('LOAD ACCOUNT ERROR', err);
-      } finally {
+
+        if (cached?.id) showUser(cached);
+        setLoading(false);
+
+        // Backend verification is silent, not a blocking auth flow.
+        if (cached?.id &&
+            Date.now() - lastProfileRefreshAt < ACCOUNT_PROFILE_REFRESH_INTERVAL_MS) {
+          return;
+        }
+        try {
+          const backendUser = await getCurrentBackendUser();
+          if (!stillCurrent()) return;
+          if (backendUser?.id) {
+            lastProfileRefreshAt = Date.now();
+            showUser(backendUser);
+          } else {
+            // getCurrentBackendUser removes the token on HTTP 401/403.
+            // Do not display an old cached profile after invalidation.
+            const remainingToken = await getApiToken();
+            if (!stillCurrent()) return;
+            if (!remainingToken) {
+              lastProfileRefreshAt = 0;
+              showUser(null);
+            }
+          }
+        } catch (error) {
+          // Offline/slow Render must not hide an existing signed-in profile.
+          console.warn('[account] Background profile refresh deferred:',
+            error?.message || error);
+        }
+      } catch (error) {
+        if (!stillCurrent()) return;
+        console.warn('[account] Local session restore failed:',
+          error?.message || error);
+        accountCacheInitialized = true;
         setLoading(false);
       }
     };
 
     loadUser();
+    return () => { active = false; };
   }, []);
+
 
   const googleLogin = async () => {
     try {
@@ -182,7 +281,12 @@ export const AccountScreen = ({navigation}) => {
         return;
       }
 
-      setGoogleUser(googleResult.user);
+      accountSessionVersion += 1;
+      accountCacheInitialized = true;
+      displayedAccountUser = formatAccountUser(googleResult.user);
+      lastProfileRefreshAt = Date.now();
+      setGoogleUser(displayedAccountUser);
+      setLoading(false);
       await adoptAnonymousLocalData(googleResult.user.id);
       /*
        * После успешного Google/Django
@@ -239,7 +343,7 @@ export const AccountScreen = ({navigation}) => {
     } catch (err) {
       console.error('GOOGLE LOGIN ERROR', err);
 
-      setGoogleError(err?.message || 'Не удалось выполнить вход через Google');
+      setGoogleError(err?.message || t('account.googleLoginError'));
     } finally {
       setGoogleLoading(false);
     }
@@ -255,7 +359,12 @@ export const AccountScreen = ({navigation}) => {
       await syncAccountPreferences().catch(console.warn);
       await signOutFromGoogle();
     } finally {
+      accountSessionVersion += 1;
+      accountCacheInitialized = true;
+      displayedAccountUser = null;
+      lastProfileRefreshAt = 0;
       setGoogleUser(null);
+      setLoading(false);
     }
   };
 
@@ -273,43 +382,49 @@ export const AccountScreen = ({navigation}) => {
     <SafeAreaView style={styles.safeArea} edges={['top']}>
       <View style={styles.screen}>
         <ScrollView style={{flex: 1}} contentContainerStyle={[styles.content, {flex: undefined, flexGrow: 1, paddingBottom: 110}]}>
-          <Text style={[styles.title, {fontSize:28*uiScale}]}>Аккаунт</Text>
+          <Text style={[styles.title, {fontSize:28*uiScale},cslText(28,36)]}>{t('account.title')}</Text>
 
           {loading ? (
             <View style={styles.card}>
               <View style={styles.accountLoading}>
                 <ActivityIndicator size="small" color={colors.accent} />
 
-                <Text style={styles.accountLoadingText}>Проверка аккаунта...</Text>
+                <Text style={styles.accountLoadingText}>{t('account.checking')}</Text>
               </View>
             </View>
           ) : googleUser ? (
             <View style={styles.card}>
-              <Text style={styles.label}>Вы вошли через Google</Text>
+              <Text style={[styles.label,cslText(14,22)]}>{t('account.signedInGoogle')}</Text>
 
               {!!googleUser.name && <Text style={styles.username}>{googleUser.name}</Text>}
 
               {!!googleUser.email && <Text style={styles.googleEmail}>{googleUser.email}</Text>}
+              <Pressable onPress={verifyCloudSettings}
+                accessibilityRole="button" style={styles.settingOption}>
+                <Text style={[styles.settingText,cslText(14,22)]}>{t('accountSettings.syncCheck')}</Text>
+              </Pressable>
+              {!!settingsCloudStatus && (
+                <Text style={[styles.settingHint,cslText(12,19)]}>{settingsCloudStatus}</Text>
+              )}
 
               <Pressable disabled={deletingAccount} onPress={deleteAccount} style={{paddingVertical: 12, marginTop: 14}}>
-                <Text style={{color: '#A33A32', fontWeight: '700'}}>Удалить аккаунт и облачные данные</Text>
+                <Text style={[{color: '#A33A32', fontWeight: '700'},cslText(14,22)]}>{t('accountSettings.deleteAccount')}</Text>
               </Pressable>
               <Pressable
                 onPress={googleLogout}
                 style={({pressed}) => [styles.button, pressed && styles.pressed]}
               >
-                <Text style={styles.buttonText}>Выйти</Text>
+                <Text style={[styles.buttonText,cslText(16,24)]}>{t('account.signOut')}</Text>
               </Pressable>
             </View>
           ) : (
             <View style={styles.card}>
-              <Text style={styles.loginDescription}>
-                Войдите через Google, чтобы синхронизировать избранное, прогресс чтения, помянник,
-                личные молитвословы и другие данные между устройствами.
+              <Text style={[styles.loginDescription,cslText(15,23)]}>
+                {t('account.loginDescription')}
               </Text>
 
-              <Text style={styles.loginHint}>
-                При первом входе аккаунт будет создан автоматически.
+              <Text style={[styles.loginHint,cslText(13,20)]}>
+                {t('account.loginHint')}
               </Text>
 
               {!!googleError && <Text style={styles.error}>{googleError}</Text>}
@@ -328,29 +443,30 @@ export const AccountScreen = ({navigation}) => {
                 {googleLoading ? (
                   <ActivityIndicator color={colors.text} />
                 ) : (
-                  <Text style={styles.googleButtonText}>Продолжить с Google</Text>
+                  <Text style={[styles.googleButtonText,cslText(16,24)]}>{t('account.continueGoogle')}</Text>
                 )}
               </Pressable>
             </View>
           )}
+          <ProjectSupportSection />
           <View style={[styles.card, {marginTop: 16, gap: 12}]}>
-            <Text style={[styles.sectionTitle, {fontSize:20*uiScale}]}>Настройки приложения</Text>
-            <Text style={[styles.settingCaption, {fontSize:15*uiScale}]}>Язык интерфейса</Text>
+            <Text style={[styles.sectionTitle, {fontSize:20*uiScale},cslText(20,28)]}>{t('accountSettings.settings')}</Text>
+            <Text style={[styles.settingCaption, {fontSize:15*uiScale},cslText(15,22)]}>{t('accountSettings.interfaceLanguage')}</Text>
             <View style={styles.optionRow}>
-              {[{value: 'ru', label: 'Русский'}, {value: 'uk', label: 'Українська'}].map((option) => (
+              {INTERFACE_LANG_CHOICES.map((option) => (
                 <Pressable key={option.value} onPress={() => setLanguage(option.value)} style={[styles.settingOption, language === option.value && styles.optionSelected]}>
-                  <Text style={[styles.settingText, {fontSize:14*uiScale}]}>{option.label}</Text>
+                  <Text style={[styles.settingText, {fontSize:14*uiScale}, cslText(14,21), option.value === 'csl_traditional' && traditionalUiTextStyle('csl_traditional', 14 * uiScale, 21 * uiScale)]}>{option.label}</Text>
                 </Pressable>
               ))}
             </View>
-            <Text style={[styles.settingCaption, {fontSize:15*uiScale}]}>Язык чтения по умолчанию</Text>
+            <Text style={[styles.settingCaption, {fontSize:15*uiScale},cslText(15,22)]}>{t('accountSettings.readerLanguage')}</Text>
             {MODE_CHOICES.map((option) => (
               <Pressable key={option.value} onPress={() => changeReadingSettings({defaultMode: option.value})} style={[styles.settingOption, readingSettings.defaultMode === option.value && styles.optionSelected]}>
-                <Text style={[styles.settingText, {fontSize:14*uiScale}]}>{readingSettings.defaultMode === option.value ? '●  ' : '○  '}{option.label}</Text>
+                <Text style={[styles.settingText, {fontSize:14*uiScale}, cslText(14,21)]}>{readingSettings.defaultMode === option.value ? '●  ' : '○  '}{t('accountSettings.'+option.labelKey)}</Text>
               </Pressable>
             ))}
-            <Text style={[styles.settingHint, {fontSize:12*uiScale,lineHeight:19*uiScale}]}>Если выбранный перевод отсутствует, будет показан доступный текст. Индивидуально сохранённый режим книги имеет приоритет.</Text>
-            <Text style={[styles.settingCaption, {fontSize:15*uiScale}]}>Размер шрифта интерфейса</Text>
+            <Text style={[styles.settingHint, {fontSize:12*uiScale,lineHeight:19*uiScale},cslText(12,19)]}>{t('accountSettings.readerLanguageHint')}</Text>
+            <Text style={[styles.settingCaption, {fontSize:15*uiScale},cslText(15,22)]}>{t('accountSettings.interfaceSize')}</Text>
             <View style={styles.optionRow}>
               {[1, 1.1, 1.25].map(scale => (
                 <Pressable
@@ -364,16 +480,16 @@ export const AccountScreen = ({navigation}) => {
                 </Pressable>
               ))}
             </View>
-            <Text style={[styles.settingHint, {fontSize:12*uiScale,lineHeight:19*uiScale}]}>Масштабирует подписи интерфейса отдельно от текста молитв.</Text>
-            <Text style={[styles.settingCaption, {fontSize:15*uiScale}]}>Размер текста молитв по умолчанию: {readingSettings.fontSize}</Text>
+            <Text style={[styles.settingHint, {fontSize:12*uiScale,lineHeight:19*uiScale},cslText(12,19)]}>{t('accountSettings.interfaceSizeHint')}</Text>
+            <Text style={[styles.settingCaption, {fontSize:15*uiScale},cslText(15,22)]}>{t('accountSettings.prayerFontSize',{size:readingSettings.fontSize})}</Text>
             <View style={styles.fontSizeRow}>
               <Pressable style={styles.settingOption} onPress={() => changeReadingSettings({fontSize: Math.max(14, readingSettingsRef.current.fontSize - 1)})}>
-                <Text style={[styles.settingText, {fontSize:14*uiScale}]}>A−</Text>
+                <Text style={[styles.settingText, {fontSize:14*uiScale}, cslText(14,21)]}>A−</Text>
               </Pressable>
               <View
                 style={styles.fontSlider}
                 accessibilityRole="adjustable"
-                accessibilityLabel="Размер текста молитв"
+                accessibilityLabel={t('accountSettings.prayerFontA11y')}
                 accessibilityValue={{min: 14, max: 28, now: readingSettings.fontSize}}
                 accessibilityActions={[{name:'increment'}, {name:'decrement'}]}
                 onAccessibilityAction={event => changeReadingSettings({
@@ -391,10 +507,10 @@ export const AccountScreen = ({navigation}) => {
                 <View pointerEvents="none" style={[styles.fontSliderThumb, {left: (readingSettings.fontSize - 14) / 14 * 100 + '%'}]}/>
               </View>
               <Pressable style={styles.settingOption} onPress={() => changeReadingSettings({fontSize: Math.min(28, readingSettingsRef.current.fontSize + 1)})}>
-                <Text style={[styles.settingText, {fontSize:14*uiScale}]}>A+</Text>
+                <Text style={[styles.settingText, {fontSize:14*uiScale}, cslText(14,21)]}>A+</Text>
               </Pressable>
             </View>
-            <Text style={[styles.settingCaption, {fontSize:15*uiScale}]}>Цветовая тема чтения</Text>
+            <Text style={[styles.settingCaption, {fontSize:15*uiScale},cslText(15,22)]}>{t('accountSettings.theme')}</Text>
             <View style={styles.palettePresetRow}>
               {PALETTES.filter(option => option.value !== 'custom').map(option => (
                 <Pressable key={option.value} accessibilityRole="button"
@@ -404,12 +520,12 @@ export const AccountScreen = ({navigation}) => {
                 >
                   <View style={[styles.paletteCircle, {backgroundColor: option.color},
                     readingSettings.palette === option.value && styles.paletteSelected]}/>
-                  <Text style={styles.paletteName}>{option.label}</Text>
+                  <Text style={[styles.paletteName,cslText(11,16)]}>{t('accountSettings.'+option.labelKey)}</Text>
                 </Pressable>
               ))}
             </View>
             <View style={styles.optionRow}>
-              {[{key:'customBackground',label:'Цвет фона'}, {key:'customText',label:'Цвет текста'}].map(option => (
+              {[{key:'customBackground',labelKey:'background'}, {key:'customText',labelKey:'textColor'}].map(option => (
                 <Pressable
                   key={option.key}
                   accessibilityRole="button"
@@ -419,7 +535,7 @@ export const AccountScreen = ({navigation}) => {
                   <View style={[styles.colorChip, {backgroundColor: option.key === 'customBackground'
                     ? resolveReaderAppearance(readingSettings).background
                     : resolveReaderAppearance(readingSettings).text}]}/>
-                  <Text style={[styles.settingText, {fontSize:14*uiScale}]}>{option.label}</Text>
+                  <Text style={[styles.settingText, {fontSize:14*uiScale}, cslText(14,21)]}>{t('accountSettings.'+option.labelKey)}</Text>
                 </Pressable>
               ))}
             </View>
@@ -427,7 +543,7 @@ export const AccountScreen = ({navigation}) => {
               <View style={styles.colorPickerPanel}>
                 <ColorPalettePicker
                   key={showColorPicker}
-                  title={showColorPicker === 'customBackground' ? 'Выбрать фон' : 'Выбрать цвет текста'}
+                  title={showColorPicker === 'customBackground' ? t('accountSettings.chooseBackground') : t('accountSettings.chooseText')}
                   color={showColorPicker === 'customBackground'
                     ? resolveReaderAppearance(readingSettings).background
                     : resolveReaderAppearance(readingSettings).text}
@@ -442,12 +558,12 @@ export const AccountScreen = ({navigation}) => {
                 fontSize: readingSettings.fontSize,
                 lineHeight: readingSettings.fontSize * 1.65,
                 color: resolveReaderAppearance(readingSettings).text,
-              }}>Господи, научи меня творить волю Твою.</Text>
+              }}>{t('accountSettings.preview')}</Text>
             </View>
             <Pressable style={styles.settingOption} onPress={() => Alert.alert(
-              'Сбросить общие настройки?',
-              'Общие настройки вернутся к исходным. Индивидуальные настройки каждой читалки сохранятся.',
-              [{text: 'Отмена', style: 'cancel'}, {text: 'Сбросить', onPress: async () => {
+              t('accountSettings.resetTitle'),
+              t('accountSettings.resetText'),
+              [{text: t('accountSettings.cancel'), style: 'cancel'}, {text: t('accountSettings.confirmReset'), onPress: async () => {
                 await setLanguage('ru');
                 const reset = await resetReadingSettings();
                 await saveReadingSettings(reset);
@@ -456,9 +572,65 @@ export const AccountScreen = ({navigation}) => {
                 queueAccountPreferencePatch({settings: {...reset, language: 'ru'}}).catch(console.warn);
               }}]
             )}>
-              <Text style={[styles.settingText, {fontSize:14*uiScale}]}>Сбросить общие настройки</Text>
+              <Text style={[styles.settingText, {fontSize:14*uiScale}, cslText(14,21)]}>{t('accountSettings.reset')}</Text>
             </Pressable>
           </View>
+        <View style={{marginTop:16,padding:14,borderRadius:12,
+          backgroundColor:'#F7E8CF',borderWidth:1,borderColor:'#E2CCAA',gap:12}}>
+          <Text style={[styles.settingCaption,{fontSize:15*uiScale},cslText(15,23)]}>
+            {t('accountSettings.privacyHeading')}
+          </Text>
+          <Pressable accessibilityRole="link"
+            onPress={()=>openPolicyPage('privacy-policy/')}>
+            <Text style={[styles.settingText,{textDecorationLine:'underline'},cslText(14,22)]}>
+              {t('accountSettings.privacyPolicy')}
+            </Text>
+          </Pressable>
+          <Pressable accessibilityRole="link"
+            onPress={()=>openPolicyPage('account-deletion/')}>
+            <Text style={[styles.settingText,{textDecorationLine:'underline'},cslText(14,22)]}>
+              {t('accountSettings.onlineDelete')}
+            </Text>
+          </Pressable>
+          <Text style={[styles.settingHint,cslText(12,20)]}>
+            {t('accountSettings.onlineDeleteHint')}
+          </Text>
+        </View>
+        <View style={{marginTop:12,padding:14,borderRadius:12,
+          backgroundColor:'#F7E8CF',borderWidth:1,borderColor:'#E2CCAA'}}>
+          <Pressable accessibilityRole="button"
+            accessibilityState={{expanded:sourcesExpanded}}
+            onPress={()=>setSourcesExpanded(value=>!value)}
+            style={{flexDirection:'row',justifyContent:'space-between',alignItems:'center',
+              minHeight:38}}>
+            <Text style={[styles.settingText,{fontWeight:'700'},cslText(14,23)]}>{t('accountSettings.licenses')}</Text>
+            <Ionicons name={sourcesExpanded?'chevron-up':'chevron-down'}
+              size={19} color="#875627"/>
+          </Pressable>
+          {sourcesExpanded && (
+            <View style={{gap:9,marginTop:9}}>
+              <Text style={styles.settingHint}>
+                {t('accountSettings.crossRefs')}: OpenBible.info (CC BY 4.0),
+                Catholic Cross References (Unlicense / CC0).
+                {t('accountSettings.psalmNumbers')}: STEP Bible / Tyndale House (CC BY 4.0).
+              </Text>
+              {[
+                {name:'OpenBible.info — '+t('accountSettings.crossRefs'),
+                  url:'https://www.openbible.info/labs/cross-references/'},
+                {name:'Catholic Cross References — '+t('accountSettings.extraCrossRefs'),
+                  url:'https://github.com/jesuslovestyler/Catholic-Cross-References'},
+                {name:'STEP Bible — '+t('accountSettings.psalmNumbers'),
+                  url:'https://www.STEPBible.org'},
+              ].map(link => (
+                <Pressable key={link.url} accessibilityRole="link"
+                  onPress={()=>Linking.openURL(link.url).catch(()=>{})}>
+                  <Text style={[styles.settingText,{textDecorationLine:'underline',
+                    color:'#80502C'}]}>{link.name}</Text>
+                </Pressable>
+              ))}
+            </View>
+          )}
+        </View>
         <View style={{
   marginTop: 16,
   marginBottom: 12,
@@ -469,22 +641,22 @@ export const AccountScreen = ({navigation}) => {
   borderColor: '#E2CCAA',
   gap: 10,
 }}>
-  <Text style={{
+  <Text style={[{
     fontSize: 17,
     fontWeight: '700',
     color: '#503524',
-  }}>
-    Текст Библии в церковном календаре
+  },cslText(17,26)]}>
+    {t('accountSettings.calendarBibleTitle')}
   </Text>
 
   {[
     {
       value: 'rst',
-      label: 'Русский (Синодальный перевод)',
+      label: t('accountSettings.calendarRussian'),
     },
     {
       value: 'csl_traditional',
-      label: 'Церковнославянский (Елизаветинская Библия)',
+      label: t('accountSettings.calendarTraditional'),
     },
   ].map((option) => (
     <Pressable
@@ -507,20 +679,23 @@ export const AccountScreen = ({navigation}) => {
         },
       ]}
     >
-      <Text style={{color: '#503524', fontSize: 14}}>
-        {calendarBibleTranslationCode === option.value ? '●  ' : '○  '}
-        {option.label}
-      </Text>
+      <View style={{flexDirection: 'row', alignItems: 'center', gap: 8}}>
+        <Text style={{color: '#503524', fontSize: 14}}>
+          {calendarBibleTranslationCode === option.value ? '●' : '○'}
+        </Text>
+        <Text style={[{color: '#503524', fontSize: 14, flex: 1},cslText(14,23)]}>
+          {option.label}
+        </Text>
+      </View>
     </Pressable>
   ))}
 
-  <Text style={{
+  <Text style={[{
     fontSize: 12,
     lineHeight: 19,
     color: '#836A52',
-  }}>
-    Выбранный перевод используется для библейских чтений
-    календаря независимо от языка самой Библии.
+  },cslText(12,20)]}>
+    {t('accountSettings.calendarBibleHint')}
   </Text>
 </View>
         </ScrollView>

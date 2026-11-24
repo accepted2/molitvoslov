@@ -1,3 +1,6 @@
+import {TRADITIONAL_UI} from './traditionalUi';
+import {EXTRA_COPY} from './extraCopy';
+import {INTERFACE_COMPLETION} from './interfaceCompletion';
 const COPY = {
   ru: {
     common: {
@@ -50,6 +53,8 @@ const COPY = {
       continueCanon: 'Продолжить канон',
       continueRule: 'Продолжить правило',
       prayers: 'Молитвы',
+      emptyTitle: 'Начатых чтений пока нет',
+      emptyText: 'Когда вы начнёте читать молитву, акафист, канон, Псалтирь или Библию, прогресс появится здесь.',
     },
     communion: {
       title: 'Ко Святому Причащению',
@@ -473,6 +478,8 @@ const COPY = {
       continueCanon: 'Продовжити канон',
       continueRule: 'Продовжити правило',
       prayers: 'Молитви',
+      emptyTitle: 'Розпочатих читань поки немає',
+      emptyText: 'Коли ви почнете читати молитву, акафіст, канон, Псалтир або Біблію, прогрес з’явиться тут.',
     },
     communion: {
       title: 'До Святого Причастя',
@@ -856,8 +863,13 @@ const interpolate = (value, params) =>
   );
 
 export const translate = (language, key, params = {}) => {
-  const selected = COPY[language] || COPY.ru;
-  const value = getPath(selected, key) ?? getPath(COPY.ru, key) ?? key;
+  const selected = language === 'csl_traditional'
+    ? TRADITIONAL_UI
+    : COPY[language] || COPY.ru;
+  const value = getPath(INTERFACE_COMPLETION[language], key) ??
+    getPath(EXTRA_COPY[language], key) ??
+    getPath(selected, key) ??
+    getPath(COPY.ru, key) ?? key;
 
   return interpolate(value, params);
 };

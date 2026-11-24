@@ -1,5 +1,11 @@
 import React from 'react';
-import {NavigationContainer} from '@react-navigation/native';
+import * as Notifications from 'expo-notifications';
+import {routeForNotificationResponse, reconcilePrayerReminders} from '../services/localPrayerReminders';
+import {NotificationsScreen} from '../screens/NotificationsScreen';
+import {AppState, Linking} from 'react-native';
+import {normalizeIncomingAppLink} from '../services/appLinks';
+import {readStartupAppLink, completeStartupAppLinkCapture} from '../services/startupAppLink';
+import {NavigationContainer, getStateFromPath} from '@react-navigation/native';
 import {createStackNavigator} from '@react-navigation/stack';
 
 import {MenuScreen} from '../screens/MenuScreen';
@@ -10,6 +16,8 @@ import {ReaderScreen} from '../screens/ReaderScreen';
 import {BookScreen} from '../screens/BookScreen';
 import {PrayerRuleScreen} from '../screens/PrayerRuleScreen';
 import PsalterScreen from '../screens/PsalterScreen';
+import {HoursScreen} from '../screens/HoursScreen';
+import {HoursReadingScreen} from '../screens/HoursReadingScreen';
 import KathismaScreen from '../screens/KathismaScreen';
 import {AkathistListScreen} from '../screens/AkathistListScreen';
 import {AkathistScreen} from '../screens/AkathistScreen';
@@ -17,11 +25,13 @@ import {CanonListScreen} from '../screens/CanonListScreen';
 import {CanonScreen} from '../screens/CanonScreen';
 import {CommunionPreparationScreen} from '../screens/CommunionPreparationScreen';
 import {ConfessionPreparationScreen} from '../screens/ConfessionPreparationScreen';
+import {PrayerLearningScreen} from '../screens/PrayerLearningScreen';
 import {BibleScreen} from '../screens/BibleScreen';
 import {BibleBooksScreen} from '../screens/BibleBooksScreen';
 import {BibleBookScreen} from '../screens/BibleBookScreen';
 import {BibleChapterScreen} from '../screens/BibleChapterScreen';
 import {FavoritesScreen} from '../screens/FavoritesScreen';
+import {SharedImportScreen} from '../screens/SharedImportScreen';
 import {MiscPrayersScreen} from '../screens/MiscPrayersScreen';
 import {MiscPrayerPlaceholderScreen} from '../screens/MiscPrayerPlaceholderScreen';
 import {ContinueReadingScreen} from '../screens/ContinueReadingScreen';
@@ -41,9 +51,36 @@ const Stack = createStackNavigator();
 
 const linking = {
   prefixes: ['molitvoslov://'],
+  // Android delivers the verified HTTPS link to our activity without first
+  // loading Render. Preserve custom-scheme support for older shared links.
+  async getInitialURL(){
+    return await readStartupAppLink() ||
+      normalizeIncomingAppLink(await Linking.getInitialURL());
+  },
+  subscribe(listener){
+    const subscription=Linking.addEventListener('url',({url})=>{
+      const target=normalizeIncomingAppLink(url);
+      if(target)listener(target);
+    });
+    return ()=>subscription.remove();
+  },
 
   config: {
+    initialRouteName: 'Menu',
     screens: {
+      SharedImport: {path:'shared/:token'},
+      BibleBook: {path:'bible-book/:bookId/:translationCode?'},
+      BibleChapter: {path:'bible/:bookId/:chapterNumber/:translationCode?/:verseNumber?',
+        parse:{chapterNumber:Number,verseNumber:Number}},
+      Akathist: {path:'akathist/:akathistId/:anchorId?',parse:{anchorId:Number}},
+      Canon: {path:'canon/:canonId/:anchorId?',parse:{anchorId:Number}},
+      Kathisma: {path:'kathisma/:kathismaNumber/:psalmNumber?/:readerMode?',
+        parse:{kathismaNumber:Number,psalmNumber:Number}},
+      PrayerRule: {path:'prayer/:slug/:anchorId?',parse:{anchorId:Number}},
+      Reader: {path:'reader/:slug/:anchorId?',parse:{anchorId:Number}},
+      HoursReading: {path:'hours/:entryId/:anchorId?',parse:{anchorId:Number}},
+      SaintDetail: {path:'saint/:date/:focusSection/:feastUid?'},
+      Psalter: {path:'psalter'},
       ChurchCalendar: {
         path: 'calendar/:date',
       },
@@ -79,8 +116,88 @@ const transitionTiming = {
 };
 
 export const AppNavigator = () => {
+  // REMINDERS_SCHEDULE_REPAIR_V2
+  // Recover missing native alarms and migrate silent v1 schedules.
+  React.useEffect(() => {
+    let active = true;
+    const repair = () => {
+      if (!active) return;
+      reconcilePrayerReminders().catch(error =>
+        console.warn('[reminders] restore schedules:', error?.message || error));
+    };
+    repair();
+    const subscription = AppState.addEventListener('change', state => {
+      if (state === 'active') repair();
+    });
+    return () => {active = false; subscription.remove();};
+  }, []);
+
+  // MOLITVOSLOV_LOCAL_REMINDERS_BELL_20261117
+  const navigationRef = React.useRef(null);
+  const pendingReminderRoute = React.useRef(null);
+
+  // COLD_START_APP_LINK_RECOVERY_V1
+  const recoverColdStartAppLink = () => {
+    readStartupAppLink()
+      .then(url => {
+        const nav = navigationRef.current;
+        if (!url || !nav?.isReady() || nav.getCurrentRoute()?.name !== 'Menu' ||
+            !url.startsWith('molitvoslov://')) return;
+        const path = url.slice('molitvoslov://'.length);
+        const state = getStateFromPath(path, linking.config);
+        const target = state?.routes?.[state.routes.length - 1];
+        if (target?.name && target.name !== 'Menu') {
+          console.log('[links] recover cold-start:', target.name);
+          nav.navigate(target.name, target.params);
+        }
+      })
+      .catch(error => console.warn('[links] cold-start:', error?.message || error))
+      .finally(completeStartupAppLinkCapture);
+  };
+  React.useEffect(() => {
+    let active = true;
+    const processed = new Set();
+    const handleResponse = async response => {
+      if (!response) return;
+      const identifier = response.notification?.request?.identifier;
+      const deliveryKey = identifier ? identifier + ':' + String(response.notification?.date || '') : null;
+      if (deliveryKey && processed.has(deliveryKey)) return;
+      if (deliveryKey) processed.add(deliveryKey);
+      try {
+        const destination = await routeForNotificationResponse(response);
+        if (!active || !destination) return;
+        if (navigationRef.current?.isReady()) {
+          navigationRef.current.navigate(destination.name, destination.params);
+        } else {
+          pendingReminderRoute.current = destination;
+        }
+        await Notifications.clearLastNotificationResponseAsync();
+      } catch (error) {
+        console.warn('[reminders] open notification:', error?.message || error);
+      }
+    };
+    const subscription = Notifications.addNotificationResponseReceivedListener(handleResponse);
+    Notifications.getLastNotificationResponseAsync()
+      .then(handleResponse)
+      .catch(error => console.warn('[reminders] initial response:', error?.message || error));
+    return () => {active = false; subscription.remove();};
+  }, []);
+
+  const onNavigationReady = () => {
+    const destination = pendingReminderRoute.current;
+    pendingReminderRoute.current = null;
+    if (destination && navigationRef.current?.isReady()) {
+      navigationRef.current.navigate(destination.name, destination.params);
+    }
+  };
+
   return (
-    <NavigationContainer linking={linking}>
+    <NavigationContainer linking={linking} ref={navigationRef} onReady={() => {
+      const hadPendingNotification = !!pendingReminderRoute.current;
+      onNavigationReady();
+      if (!hadPendingNotification) recoverColdStartAppLink();
+      else completeStartupAppLinkCapture();
+    }}>
       <Stack.Navigator
         screenOptions={{
           headerStyle: {
@@ -128,6 +245,12 @@ export const AppNavigator = () => {
             headerShown: false,
           }}
         />
+
+        <Stack.Screen name="Notifications" component={NotificationsScreen}
+          options={{headerShown: false}} />
+
+        <Stack.Screen name="SharedImport" component={SharedImportScreen}
+          options={{headerShown: false}} />
 
         <Stack.Screen
           name="Favorites"
@@ -208,6 +331,16 @@ export const AppNavigator = () => {
             headerShown: false,
           }}
         />
+        <Stack.Screen
+          name="Hours"
+          component={HoursScreen}
+          options={{headerShown: false}}
+        />
+        <Stack.Screen
+          name="HoursReading"
+          component={HoursReadingScreen}
+          options={{headerShown: false}}
+        />
 
         <Stack.Screen
           name="Kathisma"
@@ -259,6 +392,13 @@ export const AppNavigator = () => {
         <Stack.Screen
           name="ConfessionPreparation"
           component={ConfessionPreparationScreen}
+          options={{
+            headerShown: false,
+          }}
+        />
+        <Stack.Screen
+          name="PrayerLearning"
+          component={PrayerLearningScreen}
           options={{
             headerShown: false,
           }}

@@ -66,6 +66,17 @@ class CalendarFeast(models.Model):
         return self.short_title or self.title
 
 
+
+    # BLAGOVEST_ALT_HYMN_SCHEMA_20261123
+    troparion_alt_title = models.TextField(blank=True, default="")
+    troparion_alt_content = models.TextField(blank=True, default="")
+    troparion_alt_title_uk = models.TextField(blank=True, default="")
+    troparion_alt_content_uk = models.TextField(blank=True, default="")
+    kontakion_alt_title = models.TextField(blank=True, default="")
+    kontakion_alt_content = models.TextField(blank=True, default="")
+    kontakion_alt_title_uk = models.TextField(blank=True, default="")
+    kontakion_alt_content_uk = models.TextField(blank=True, default="")
+
 class CalendarFastType(models.Model):
     sync_uid = models.UUIDField(
         default=uuid.uuid4,

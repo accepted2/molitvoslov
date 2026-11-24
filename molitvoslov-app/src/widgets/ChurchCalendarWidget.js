@@ -6,6 +6,7 @@ import {FlexWidget, ImageWidget, OverlapWidget, TextWidget} from 'react-native-a
 import {CALENDAR_MONTHS, calendarText} from '../services/calendarPreferences';
 import {formatFast} from '../services/churchCalendar';
 import {getBundledCalendarIconSource} from '../data/calendarIconAssets';
+import {parseDateKey, parseMonthKey} from './widgetState';
 
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 
@@ -57,7 +58,7 @@ const chunk = (items, size) => {
 
 const shiftMonth = (date, delta) => new Date(date.getFullYear(), date.getMonth() + delta, 1);
 
-export const ChurchCalendarWidget = ({
+const PreservedChurchCalendarWidget = ({
   day,
   language = 'ru',
   width = 320,
@@ -177,7 +178,7 @@ export const ChurchCalendarWidget = ({
             maxLines={1}
             style={{
               color: '#7B512F',
-              fontFamily: 'Ponomar',
+              fontFamily: 'sans-serif',
               fontSize: titleSize,
               lineHeight: titleSize + 4,
               fontWeight: '700',
@@ -200,7 +201,7 @@ export const ChurchCalendarWidget = ({
               style={{
                 flex: 1,
                 color: '#2D1C12',
-                fontFamily: 'Ponomar',
+                fontFamily: 'sans-serif',
                 fontSize: dateSize,
                 lineHeight: dateSize + 4,
                 fontWeight: '700',
@@ -214,7 +215,7 @@ export const ChurchCalendarWidget = ({
               style={{
                 marginLeft: 12,
                 color: '#765A44',
-                fontFamily: 'Ponomar',
+                fontFamily: 'sans-serif',
                 fontSize: weekdaySize,
                 lineHeight: weekdaySize + 4,
                 textAlign: 'right',
@@ -258,7 +259,7 @@ export const ChurchCalendarWidget = ({
                   allowFontScaling={false}
                   style={{
                     color: '#8B572D',
-                    fontFamily: 'Ponomar',
+                    fontFamily: 'sans-serif',
                     fontSize: tiny ? 16 : large ? 22 : 19,
                     lineHeight: tiny ? 19 : large ? 26 : 23,
                   }}
@@ -278,7 +279,7 @@ export const ChurchCalendarWidget = ({
                 maxLines={tiny ? 2 : large ? 4 : 3}
                 style={{
                   color: '#40291A',
-                  fontFamily: 'Ponomar',
+                  fontFamily: 'sans-serif',
                   fontSize: feastSize,
                   lineHeight: feastSize + 3,
                   fontWeight: '700',
@@ -303,7 +304,7 @@ export const ChurchCalendarWidget = ({
               style={{
                 width: tiny ? 30 : 38,
                 color: '#A46D38',
-                fontFamily: 'Ponomar-Regular',
+                fontFamily: 'sans-serif',
                 fontSize: infoLabelSize,
                 lineHeight: infoTextSize + 3,
                 fontWeight: '700',
@@ -318,7 +319,7 @@ export const ChurchCalendarWidget = ({
                 flex: 1,
                 minWidth: 0,
                 color: '#6C4A34',
-                fontFamily: 'Ponomar-Regular',
+                fontFamily: 'sans-serif',
                 fontSize: infoTextSize,
                 lineHeight: infoTextSize + 3,
               }}
@@ -344,7 +345,7 @@ export const ChurchCalendarWidget = ({
               style={{
                 width: tiny ? 30 : 38,
                 color: '#A46D38',
-                fontFamily: 'Ponomar-Regular',
+                fontFamily: 'sans-serif',
                 fontSize: infoLabelSize,
                 lineHeight: infoTextSize + 3,
                 fontWeight: '700',
@@ -359,7 +360,7 @@ export const ChurchCalendarWidget = ({
                 flex: 1,
                 minWidth: 0,
                 color: '#4D3424',
-                fontFamily: 'Ponomar-Regular',
+                fontFamily: 'sans-serif',
                 fontSize: infoTextSize,
                 lineHeight: infoTextSize + 3,
               }}
@@ -370,7 +371,7 @@ export const ChurchCalendarWidget = ({
               style={{
                 marginLeft: 3,
                 color: '#8B5B30',
-                fontFamily: 'Ponomar-Regular',
+                fontFamily: 'sans-serif',
                 fontSize: infoTextSize + 3,
                 lineHeight: infoTextSize + 4,
                 fontWeight: '700',
@@ -397,7 +398,7 @@ export const ChurchCalendarWidget = ({
               style={{
                 width: tiny ? 30 : 38,
                 color: '#A46D38',
-                fontFamily: 'Ponomar-Regular',
+                fontFamily: 'sans-serif',
                 fontSize: infoLabelSize,
                 lineHeight: infoTextSize + 3,
                 fontWeight: '700',
@@ -412,7 +413,7 @@ export const ChurchCalendarWidget = ({
                 flex: 1,
                 minWidth: 0,
                 color: '#4D3424',
-                fontFamily: 'Ponomar-Regular',
+                fontFamily: 'sans-serif',
                 fontSize: infoTextSize,
                 lineHeight: infoTextSize + 3,
               }}
@@ -423,7 +424,7 @@ export const ChurchCalendarWidget = ({
               style={{
                 marginLeft: 3,
                 color: '#8B5B30',
-                fontFamily: 'Ponomar-Regular',
+                fontFamily: 'sans-serif',
                 fontSize: infoTextSize + 3,
                 lineHeight: infoTextSize + 4,
                 fontWeight: '700',
@@ -461,7 +462,7 @@ export const ChurchCalendarWidget = ({
               style={{
                 width: cellWidth,
                 color: '#8A5B31',
-                fontFamily: 'Ponomar',
+                fontFamily: 'sans-serif',
                 fontSize: arrowSize,
                 lineHeight: monthHeaderHeight,
                 textAlign: 'center',
@@ -477,7 +478,7 @@ export const ChurchCalendarWidget = ({
               style={{
                 width: gridWidth - cellWidth * 2,
                 color: '#4C3020',
-                fontFamily: 'Ponomar',
+                fontFamily: 'sans-serif',
                 fontSize: monthSize,
                 lineHeight: monthHeaderHeight,
                 fontWeight: '700',
@@ -496,7 +497,7 @@ export const ChurchCalendarWidget = ({
               style={{
                 width: cellWidth,
                 color: '#8A5B31',
-                fontFamily: 'Ponomar',
+                fontFamily: 'sans-serif',
                 fontSize: arrowSize,
                 lineHeight: monthHeaderHeight,
                 textAlign: 'center',
@@ -522,7 +523,7 @@ export const ChurchCalendarWidget = ({
                   width: cellWidth,
                   height: weekdayHeight,
                   color: index >= 5 ? '#A24C40' : '#8A7462',
-                  fontFamily: 'Ponomar',
+                  fontFamily: 'sans-serif',
                   fontSize: weekdayHeaderSize,
                   lineHeight: weekdayHeight,
                   textAlign: 'center',
@@ -584,7 +585,7 @@ export const ChurchCalendarWidget = ({
 
                       borderRadius: cell.selected || cell.today ? dayBubbleSize / 2 : 0,
 
-                      fontFamily: 'Ponomar-Regular',
+                      fontFamily: 'sans-serif',
                       fontSize: numberSize,
 
                       lineHeight: cell.selected || cell.today ? dayBubbleSize : rowHeight,
@@ -602,4 +603,20 @@ export const ChurchCalendarWidget = ({
       </FlexWidget>
     </OverlapWidget>
   );
+};
+
+// Keep the original customized appearance while supporting per-widget state.
+export const ChurchCalendarWidget = props => {
+  const month = parseMonthKey(props.monthKey);
+  const date = parseDateKey(props.selectedKey);
+  const displayDate = month
+    ? new Date(month.year, month.month - 1, 1, 12)
+    : props.displayDate;
+  const day = date
+    ? props.day?.date_gregorian === props.selectedKey
+      ? props.day
+      : {...(props.day || {}), date_gregorian: props.selectedKey}
+    : props.day;
+  return <PreservedChurchCalendarWidget
+    {...props} day={day} displayDate={displayDate} />;
 };

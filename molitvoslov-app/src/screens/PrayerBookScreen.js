@@ -6,9 +6,12 @@ import {StatusBar} from 'expo-status-bar';
 
 import {AppBackground} from '../components/layout/AppBackground';
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
+import {BookDeleteConfirmModal} from '../components/share/BookDeleteConfirmModal';
+/* PERSONAL_BOOK_ACTIONS_20261117: sharing remains available from the collection list. */
 import {
   addPrayerToBook,
   createPersonalPrayer,
+  deletePrayerBook,
   getPersonalPrayers,
   getPrayerBook,
   importSavedItemToBook,
@@ -405,6 +408,7 @@ export const PrayerBookScreen = ({route, navigation}) => {
   const [savedPicker, setSavedPicker] = useState(false);
   const [globalSearch, setGlobalSearch] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [deleteVisible, setDeleteVisible] = useState(false); // BOOK_ACTIONS_STACKED_MODAL_20261117
 
   const load = useCallback(async () => {
     try {
@@ -503,6 +507,25 @@ export const PrayerBookScreen = ({route, navigation}) => {
     ]);
   };
 
+  const confirmDeleteBook = () => {
+    if (!book?.sync_id || busy) return;
+    setDeleteVisible(true);
+  };
+  const performDeleteBook = async () => {
+    if (!book?.sync_id || busy) return;
+    setBusy(true);
+    try {
+      await deletePrayerBook(book.sync_id);
+      setDeleteVisible(false);
+      navigation.navigate('PrayerBooks');
+    } catch (error) {
+      setDeleteVisible(false);
+      Alert.alert('Не удалось удалить молитвослов', error?.message || 'Повторите попытку.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
   if (!book) {
     return (
       <AppBackground imageOpacity={0.72}>
@@ -585,6 +608,21 @@ export const PrayerBookScreen = ({route, navigation}) => {
               <Text style={styles.emptyTitle}>{t('prayerBooks.bookEmptyTitle')}</Text>
               <Text style={styles.emptyText}>{t('prayerBooks.bookEmptyText')}</Text>
             </View>
+          }
+          ListFooterComponent={
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Удалить молитвослов"
+              disabled={busy}
+              onPress={confirmDeleteBook}
+              style={({pressed}) => [
+                styles.deleteBookButton,
+                pressed && styles.pressed,
+                busy && styles.disabled,
+              ]}
+            >
+              <Text style={styles.deleteBookText}>Удалить молитвослов</Text>
+            </Pressable>
           }
           renderItem={({item, index}) => {
             const prayer = item.prayer;
@@ -676,7 +714,18 @@ export const PrayerBookScreen = ({route, navigation}) => {
           </Pressable>
         </View>
 
-        <FixedSectionHeader onHeaderHeightChange={setHeaderHeight} title={book.title} navigation={navigation} topInset={insets.top} />
+        <FixedSectionHeader onHeaderHeightChange={setHeaderHeight}
+          title={book.title} navigation={navigation} topInset={insets.top} />
+
+        <BookDeleteConfirmModal
+          visible={deleteVisible}
+          title="Удалить молитвослов?"
+          message={'Молитвослов "' + (book.title || 'Мой молитвослов') +
+            '" и его состав будут удалены. Сами молитвы останутся в личной библиотеке.'}
+          busy={busy}
+          onCancel={() => setDeleteVisible(false)}
+          onConfirm={performDeleteBook}
+        />
 
         <SavedPickerModal
           visible={savedPicker}
@@ -708,6 +757,18 @@ const styles = StyleSheet.create({
     color: '#654731',
     fontFamily: 'serif',
     lineHeight: 20,
+  },
+  deleteBookButton: {
+    alignSelf: 'center',
+    marginTop: 20,
+    marginBottom: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  deleteBookText: {
+    color: '#A34738',
+    fontSize: 14,
+    fontWeight: '700',
   },
   stickyReadBar: {
     paddingHorizontal: spacing.md,

@@ -24,6 +24,9 @@ import * as ImagePicker from 'expo-image-picker';
 import {AppBackground} from '../components/layout/AppBackground';
 
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
+import {BookDeleteConfirmModal} from '../components/share/BookDeleteConfirmModal';
+
+/* PERSONAL_BOOK_ACTIONS_20261117: sharing remains available from the memorial list. */
 
 import {MemorialPhotoViewer} from '../components/memorial/MemorialPhotoViewer';
 
@@ -235,6 +238,8 @@ export const MemorialBookScreen = ({navigation, route}) => {
   const bookSyncId = route.params?.bookSyncId;
 
   const [book, setBook] = useState(null);
+  const [deleteVisible, setDeleteVisible] = useState(false); // BOOK_ACTIONS_STACKED_MODAL_20261117
+  const [deleteBusy, setDeleteBusy] = useState(false);
 
   const [title, setTitle] = useState('');
 
@@ -522,30 +527,22 @@ export const MemorialBookScreen = ({navigation, route}) => {
     ]);
   };
 
-  const confirmDeleteBook = () => {
-    Alert.alert(t('memorial.deleteBookTitle'), t('memorial.deleteBookText'), [
-      {
-        text: t('memorial.cancel'),
-        style: 'cancel',
-      },
-      {
-        text: t('memorial.delete'),
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            allowLeaveRef.current = true;
-
-            await deleteMemorialBook(bookSyncId);
-
-            navigation.navigate('Memorial');
-          } catch (error) {
-            allowLeaveRef.current = false;
-
-            Alert.alert(t('common.deleteFailed'), error?.message || t('common.tryAgain'));
-          }
-        },
-      },
-    ]);
+  const confirmDeleteBook = () => setDeleteVisible(true);
+  const performDeleteBook = async () => {
+    if (deleteBusy) return;
+    setDeleteBusy(true);
+    try {
+      allowLeaveRef.current = true;
+      await deleteMemorialBook(bookSyncId);
+      setDeleteVisible(false);
+      navigation.navigate('Memorial');
+    } catch (error) {
+      allowLeaveRef.current = false;
+      setDeleteVisible(false);
+      Alert.alert(t('common.deleteFailed'), error?.message || t('common.tryAgain'));
+    } finally {
+      setDeleteBusy(false);
+    }
   };
 
   const photos = book?.photos || [];
@@ -697,8 +694,19 @@ export const MemorialBookScreen = ({navigation, route}) => {
           title={title || t('memorial.title')}
           navigation={navigation}
           topInset={insets.top}
+
         />
       </KeyboardAvoidingView>
+
+      <BookDeleteConfirmModal
+        visible={deleteVisible}
+        title={t('memorial.deleteBookTitle')}
+        message={t('memorial.deleteBookText')}
+        busy={deleteBusy}
+        onCancel={() => setDeleteVisible(false)}
+        onConfirm={performDeleteBook}
+        confirmLabel={t('memorial.delete')}
+      />
 
       <MemorialPhotoViewer
         visible={viewer.visible}

@@ -1688,3 +1688,49 @@ class PublicAppAssetAdmin(admin.ModelAdmin):
     list_editable = ("enabled",)
     search_fields = ("key", "title")
     readonly_fields = ("updated_at",)
+
+
+from .models import AccountDeletionRequest, AccountPreferences
+
+@admin.register(AccountDeletionRequest)
+class AccountDeletionRequestAdmin(admin.ModelAdmin):
+    list_display = ("email", "kind", "status", "created_at", "updated_at")
+    list_filter = ("kind", "status", "created_at")
+    search_fields = ("email", "message")
+    readonly_fields = ("email", "kind", "message", "created_at", "updated_at")
+    list_editable = ("status",)
+
+@admin.register(AccountPreferences)
+class AccountPreferencesAdmin(admin.ModelAdmin):
+    list_display = ("user", "updated_at")
+    search_fields = ("user__email", "user__username")
+    readonly_fields = ("user", "settings", "reader_overrides", "reader_modes", "updated_at")
+
+# BLAGOVEST_ALT_HYMN_SCHEMA_20261123
+# Extend the registered admin class without guessing its existing method layout.
+_blv_alt_fields = ("troparion_alt_title","troparion_alt_content","troparion_alt_title_uk","troparion_alt_content_uk","kontakion_alt_title","kontakion_alt_content","kontakion_alt_title_uk","kontakion_alt_content_uk",)
+_blv_previous_fieldsets = CalendarFeastAdmin.get_fieldsets
+def _blv_calendar_fieldsets(self, request, obj=None):
+    existing = list(_blv_previous_fieldsets(self, request, obj))
+    existing_titles = {str(item[0]) for item in existing}
+    groups = (
+        ("Иной тропарь — RU/UK", ("troparion_alt_title", "troparion_alt_content",
+                                   "troparion_alt_title_uk", "troparion_alt_content_uk")),
+        ("Иной кондак — RU/UK", ("kontakion_alt_title", "kontakion_alt_content",
+                                  "kontakion_alt_title_uk", "kontakion_alt_content_uk")),
+    )
+    for label, fields in groups:
+        if label not in existing_titles:
+            existing.append((label, {"fields": fields, "classes": ("collapse",)}))
+    return existing
+CalendarFeastAdmin.get_fieldsets = _blv_calendar_fieldsets
+
+_blv_previous_save = CalendarFeastAdmin.save_model
+def _blv_calendar_save(self, request, obj, form, change):
+    edited = set(getattr(form, "changed_data", ()) or ()) & set(_blv_alt_fields)
+    if edited:
+        obj.manually_edited_fields = sorted(
+            set(getattr(obj, "manually_edited_fields", ()) or ()) | edited
+        )
+    return _blv_previous_save(self, request, obj, form, change)
+CalendarFeastAdmin.save_model = _blv_calendar_save

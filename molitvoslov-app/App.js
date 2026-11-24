@@ -7,14 +7,18 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
 
 import {SafeAreaProvider} from 'react-native-safe-area-context';
+import {GestureHandlerRootView} from 'react-native-gesture-handler';
 
 import {useFonts} from 'expo-font';
 
 import {AppNavigator} from './src/navigation/AppNavigator';
+import {beginStartupAppLinkCapture} from './src/services/startupAppLink';
 import {OnboardingScreen} from './src/screens/OnboardingScreen';
 import {PrayerBeadsLoader} from './src/components/feedback/PrayerBeadsLoader';
+import {PrayerBeadsPreviewScreen} from './src/components/feedback/PrayerBeadsPreviewScreen';
 
 import {TextSelectionProvider} from './src/context/TextSelectionContext';
+import {ShareFeedbackHost} from './src/components/share/ShareFeedbackHost';
 import {LanguageProvider} from './src/context/LanguageContext';
 import {InterfaceScaleProvider} from './src/context/InterfaceScaleContext';
 
@@ -41,7 +45,7 @@ const MIN_STARTUP_MS = 650;
 
 const StartupLoadingScreen = () => (
   <ImageBackground
-    source={require('./assets/home/hero.png')}
+    source={require('./assets/home/hero_opt.webp')}
     resizeMode="cover"
     style={styles.startupImage}
   >
@@ -58,7 +62,15 @@ const StartupLoadingScreen = () => (
   </ImageBackground>
 );
 
+// Capture Android launch links before waiting on SQLite, fonts and onboarding.
+beginStartupAppLinkCapture();
+
 export default function App() {
+  // The endless loader preview is available only in an explicitly requested
+  // development session, never in a release APK.
+  const [previewOpen, setPreviewOpen] = useState(
+    __DEV__ && process.env.EXPO_PUBLIC_PRAYER_BEADS_PREVIEW === '1'
+  );
   const [databaseReady, setDatabaseReady] = useState(false);
   const [onboardingReady, setOnboardingReady] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
@@ -237,20 +249,27 @@ export default function App() {
     }
   }, []);
 
+  if (__DEV__ && previewOpen) {
+    return <PrayerBeadsPreviewScreen onContinue={() => setPreviewOpen(false)} />;
+  }
+
   if (!appReady || !minimumStartupElapsed) {
     return <StartupLoadingScreen />;
   }
 
   return (
+    <GestureHandlerRootView style={{flex:1}}>
     <SafeAreaProvider>
       <LanguageProvider>
         <InterfaceScaleProvider>
         <TextSelectionProvider>
           {showOnboarding ? <OnboardingScreen onComplete={completeOnboarding} /> : <AppNavigator />}
+          <ShareFeedbackHost />
         </TextSelectionProvider>
         </InterfaceScaleProvider>
       </LanguageProvider>
     </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }
 

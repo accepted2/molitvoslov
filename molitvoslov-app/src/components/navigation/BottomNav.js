@@ -5,6 +5,7 @@ import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {LinearGradient} from 'expo-linear-gradient';
 import {useLanguage} from '../../context/LanguageContext';
 import {useInterfaceScale} from '../../context/InterfaceScaleContext';
+import {traditionalUiTextStyle} from '../../services/traditionalUiTypography';
 import Feather from '@expo/vector-icons/Feather';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 const ITEMS = [
@@ -38,8 +39,10 @@ export const BottomNav = ({navigation, active, readingHidden = false}) => {
     Animated.timing(visibility, {toValue: readingHidden ? 1 : 0, duration: 340, easing: Easing.out(Easing.cubic), useNativeDriver: true}).start();
   }, [readingHidden, visibility]);
   const insets = useSafeAreaInsets();
-  const {t} = useLanguage();
+  const {language,t} = useLanguage();
   const uiScale = useInterfaceScale();
+  const traditional = language === 'csl_traditional';
+  const traditionalStyle = traditionalUiTextStyle(language, 10 * uiScale, 12 * uiScale);
   const iconSize = Math.round(17 * uiScale);
   const rowHeight = Math.round(46 + (uiScale - 1) * 56);
   const itemHeight = rowHeight - 5;
@@ -49,6 +52,45 @@ export const BottomNav = ({navigation, active, readingHidden = false}) => {
       index: route === 'Menu' ? 0 : 1,
       routes: route === 'Menu' ? [{name: 'Menu'}] : [{name: 'Menu'}, {name: route}],
     }));
+  };
+
+  // Home and Account remain symmetric around the three middle tabs.
+  const renderTab = (item, columnStyle) => {
+    const isActive = item.key === active;
+    return (
+              <Pressable
+                key={item.key}
+                accessibilityRole="button"
+                accessibilityState={{selected: isActive}}
+                accessibilityLabel={traditional ? t('navCompact.'+item.key) : t(item.labelKey)}
+                onPress={() => openRootTab(item.route)}
+                style={({pressed}) => [
+                  styles.item,
+                  columnStyle,
+                  {height: itemHeight},
+                  isActive && styles.itemActive,
+                  pressed && styles.pressed,
+                ]}
+              >
+                <View style={styles.itemContent}>
+                  <View style={[styles.navIconWrap, {width: Math.round(22 * uiScale), height: Math.round(22 * uiScale)}]}>
+                    <NavIcon type={item.icon} active={isActive} size={iconSize} />
+                  </View>
+
+                  <Text
+                    numberOfLines={uiScale > 1.15 ? 2 : 1}
+                    adjustsFontSizeToFit={!traditional && uiScale === 1}
+                    minimumFontScale={0.8}
+                    style={[styles.label, {
+                      fontSize: 10 * uiScale,
+                      lineHeight: 12 * uiScale,
+                    }, isActive && styles.labelActive, traditionalStyle]}
+                  >
+                    {traditional ? t('navCompact.'+item.key) : t(item.labelKey)}
+                  </Text>
+                </View>
+              </Pressable>
+    );
   };
 
   return (
@@ -69,43 +111,11 @@ export const BottomNav = ({navigation, active, readingHidden = false}) => {
         style={styles.container}
       >
         <View style={[styles.itemsRow, {height: rowHeight}]}>
-          {ITEMS.map((item) => {
-            const isActive = item.key === active;
-
-            return (
-              <Pressable
-                key={item.key}
-                accessibilityRole="button"
-                accessibilityState={{selected: isActive}}
-                accessibilityLabel={t(item.labelKey)}
-                onPress={() => openRootTab(item.route)}
-                style={({pressed}) => [
-                  styles.item,
-                  {height: itemHeight},
-                  isActive && styles.itemActive,
-                  pressed && styles.pressed,
-                ]}
-              >
-                <View style={styles.itemContent}>
-                  <View style={[styles.navIconWrap, {width: Math.round(22 * uiScale), height: Math.round(22 * uiScale)}]}>
-                    <NavIcon type={item.icon} active={isActive} size={iconSize} />
-                  </View>
-
-                  <Text
-                    numberOfLines={uiScale === 1 ? 1 : 2}
-                    adjustsFontSizeToFit={uiScale === 1}
-                    minimumFontScale={0.8}
-                    style={[styles.label, {
-                      fontSize: 10 * uiScale,
-                      lineHeight: 12 * uiScale,
-                    }, isActive && styles.labelActive]}
-                  >
-                    {t(item.labelKey)}
-                  </Text>
-                </View>
-              </Pressable>
-            );
-          })}
+          {renderTab(ITEMS[0], styles.outerTab)}
+          <View style={styles.centralTabs}>
+            {ITEMS.slice(1, 4).map(item => renderTab(item, styles.centralTab))}
+          </View>
+          {renderTab(ITEMS[4], styles.outerTab)}
         </View>
       </LinearGradient>
     </Animated.View>
@@ -155,8 +165,23 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 
-  item: {
+  // Two mirror-image outer tabs and one equally spaced central trio.
+  outerTab: {
+    width: '15%',
+    flexGrow: 0,
+    flexShrink: 0,
+  },
+  centralTabs: {
+    width: '70%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  centralTab: {
     flex: 1,
+    minWidth: 0,
+  },
+  item: {
     minWidth: 0,
     height: 41,
     alignItems: 'center',

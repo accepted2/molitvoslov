@@ -1,3 +1,4 @@
+import {getBundledCalendarDay, getBundledCalendarMonth} from './calendarOfflineStore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
 import {applyYearMarkers, applyYearMarkersToMonth, loadYearMarkers} from './calendarYearMarkers';
@@ -143,137 +144,14 @@ const canReachNetwork = async () => {
   }
 };
 
-export const getCalendarDay = async (
-  value = new Date(),
-  {force = false, language = 'ru', skipOffline = false, signal} = {}
-) => {
-  const dateKey = typeof value === 'string' ? value : toCalendarDate(value);
-  const lang = language === 'uk' ? 'uk' : 'ru';
-  const key = `${lang}:${dateKey}`;
-
-  if (!force && dayCache.has(key)) {
-    return dayCache.get(key);
-  }
-
-  const offline = skipOffline ? null : await getOfflineCalendarDay(dateKey, lang);
-  if (!force && offline) {
-    dayCache.set(key, offline);
-    return offline;
-  }
-  const online = await canReachNetwork();
-
-  if (!online && offline) {
-    dayCache.set(key, offline);
-    return offline;
-  }
-
-  try {
-    const data = await fetchCalendarJson(
-      `/api/calendar/day/?date=${encodeURIComponent(dateKey)}&lang=${lang}`,
-      {signal}
-    );
-
-    if (signal?.aborted) {
-      const abortError = new Error('Aborted');
-      abortError.name = 'AbortError';
-      throw abortError;
-    }
-
-    const enriched = applyYearMarkers(data, await loadYearMarkers(Number(dateKey.slice(0, 4))));
-    await storeCalendarDay(dateKey, lang, enriched);
-    dayCache.set(key, enriched);
-
-    return enriched;
-  } catch (error) {
-    if (signal?.aborted || error?.name === 'AbortError') {
-      throw error;
-    }
-
-    if (offline) {
-      dayCache.set(key, offline);
-      return offline;
-    }
-
-    throw error;
-  }
+export const getCalendarDay = async (value = new Date(), {language = "ru"} = {}) => {
+  // Release-only calendar: ignore force/skipOffline/server arguments.
+  return getBundledCalendarDay(value, language);
 };
 
-export const getCalendarMonth = async (
-  year,
-  month,
-  {force = false, language = 'ru', skipOffline = false, signal} = {}
-) => {
-  const lang = language === 'uk' ? 'uk' : 'ru';
-  const key = `${lang}:${year}-${month}`;
-
-  if (!force && monthCache.has(key)) {
-    return monthCache.get(key);
-  }
-
-  const offline = skipOffline ? null : await getOfflineCalendarMonth(year, month, lang);
-  if (!force && offline) {
-    monthCache.set(key, offline);
-    (offline.days || []).forEach((day) => {
-      if (day?.date_gregorian) dayCache.set(`${lang}:${day.date_gregorian}`, day);
-    });
-    return offline;
-  }
-  const online = await canReachNetwork();
-
-  if (!online && offline) {
-    monthCache.set(key, offline);
-
-    (offline.days || []).forEach((day) => {
-      if (day?.date_gregorian) {
-        dayCache.set(`${lang}:${day.date_gregorian}`, day);
-      }
-    });
-
-    return offline;
-  }
-
-  try {
-    const data = await fetchCalendarJson(
-      `/api/calendar/month/?year=${encodeURIComponent(year)}&month=${encodeURIComponent(month)}&lang=${lang}`,
-      {signal}
-    );
-
-    if (signal?.aborted) {
-      const abortError = new Error('Aborted');
-      abortError.name = 'AbortError';
-      throw abortError;
-    }
-
-    const enriched = applyYearMarkersToMonth(data, await loadYearMarkers(year));
-    await storeCalendarMonth(enriched, lang);
-    monthCache.set(key, enriched);
-
-    (enriched?.days || []).forEach((day) => {
-      if (day?.date_gregorian) {
-        dayCache.set(`${lang}:${day.date_gregorian}`, day);
-      }
-    });
-
-    return enriched;
-  } catch (error) {
-    if (signal?.aborted || error?.name === 'AbortError') {
-      throw error;
-    }
-
-    if (offline) {
-      monthCache.set(key, offline);
-
-      (offline.days || []).forEach((day) => {
-        if (day?.date_gregorian) {
-          dayCache.set(`${lang}:${day.date_gregorian}`, day);
-        }
-      });
-
-      return offline;
-    }
-
-    throw error;
-  }
+export const getCalendarMonth = async (year, month, {language = "ru"} = {}) => {
+  // New calendar years arrive in a new app release, never by HTTP refresh.
+  return getBundledCalendarMonth(year, month, language);
 };
 
 const BOOK_ALIASES = [
@@ -661,10 +539,10 @@ export const formatFast = (day, language = 'ru') => {
 
   const markers = getCalendarMarkers(day);
   const uk = language === 'uk';
-  const cu = language === 'cu';
-  const noFast = uk ? 'Посту немає' : cu ? 'Поста нѣсть' : 'Поста нет';
-  const solid = uk ? 'Суцільний тиждень' : 'Сплошная седмица';
-  const fasting = uk ? 'Пісний день' : 'Постный день';
+  const cu = language === 'cu' || language === 'csl_traditional';
+  const noFast = uk ? 'Посту немає' : cu ? 'По́ста нѣ́сть' : 'Поста нет';
+  const solid = uk ? 'Суцільний тиждень' : cu ? 'Сплошна́я седми́ца' : 'Сплошная седмица';
+  const fasting = uk ? 'Пісний день' : cu ? 'По́стный де́нь' : 'Постный день';
 
   // Lenacom imports carry the final dietary restriction for this date.
   // Do not let older Azbyka fasting markers override verified imported values.

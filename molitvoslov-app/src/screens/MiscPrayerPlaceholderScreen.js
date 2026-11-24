@@ -4,7 +4,8 @@ import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {StatusBar} from 'expo-status-bar';
 
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
-import {READER_LANGUAGE_MODES, buildReaderLanguageOptions} from '../services/readerLanguageModes';
+import {READER_LANGUAGE_MODES} from '../services/readerLanguageModes';
+import {getPrayerTextAvailability, resolvePrayerMode, isPrayerModeAvailable, buildPrayerModeOptions} from '../services/prayerTextAvailability';
 import {colors, radius, spacing} from '../theme';
 
 export const MiscPrayerPlaceholderScreen = ({route, navigation}) => {
@@ -15,24 +16,21 @@ export const MiscPrayerPlaceholderScreen = ({route, navigation}) => {
     traditionalText = '',
   } = route.params || {};
 
-  const [viewMode, setViewMode] = useState(READER_LANGUAGE_MODES.BOTH);
+  const availability = getPrayerTextAvailability({
+    content: churchText, translation: russianText, traditional_content: traditionalText,
+  });
+  const [viewMode, setViewMode] = useState(() => resolvePrayerMode('church', availability));
+  const effectiveMode = resolvePrayerMode(viewMode, availability);
   const insets = useSafeAreaInsets();
   const [headerHeight, setHeaderHeight] = React.useState(insets.top + 56);
   React.useEffect(() => {setHeaderHeight(insets.top + 56);}, [insets.top]);
 
-  const options = useMemo(
-    () =>
-      buildReaderLanguageOptions({
-        hasRussian: !!russianText.trim(),
-        hasTraditional: !!traditionalText.trim(),
-      }),
-    [russianText, traditionalText]
-  );
+  const options = buildPrayerModeOptions(availability);
 
   const visibleTexts =
-    viewMode === READER_LANGUAGE_MODES.RUSSIAN
+    effectiveMode === READER_LANGUAGE_MODES.RUSSIAN
       ? [{key: 'russian', label: 'Русский', text: russianText}]
-      : viewMode === READER_LANGUAGE_MODES.TRADITIONAL
+      : effectiveMode === READER_LANGUAGE_MODES.TRADITIONAL
         ? [
             {
               key: 'traditional',
@@ -40,7 +38,7 @@ export const MiscPrayerPlaceholderScreen = ({route, navigation}) => {
               text: traditionalText,
             },
           ]
-        : viewMode === READER_LANGUAGE_MODES.BOTH
+        : effectiveMode === READER_LANGUAGE_MODES.BOTH
           ? [
               {key: 'church', label: 'Церковнославянский', text: churchText},
               {key: 'russian', label: 'Русский', text: russianText},
@@ -66,7 +64,9 @@ export const MiscPrayerPlaceholderScreen = ({route, navigation}) => {
               <Pressable
                 key={option.key}
                 disabled={option.disabled}
-                onPress={() => setViewMode(option.key)}
+                onPress={() => {
+                  if (isPrayerModeAvailable(option.key, availability)) setViewMode(option.key);
+                }}
                 style={({pressed}) => [
                   styles.switchButton,
                   active && styles.switchButtonActive,
@@ -82,11 +82,11 @@ export const MiscPrayerPlaceholderScreen = ({route, navigation}) => {
           })}
         </View>
 
-        <Text style={styles.title}>{title}</Text>
+        <Text style={styles.title} android_hyphenationFrequency="full" textBreakStrategy="highQuality">{title}</Text> {/* MOLITVOSLOV_MISC_PRAYER_COMPACT_TITLE_V1 */}
 
         {visibleTexts.map((item) => (
           <View key={item.key} style={styles.textBlock}>
-            {viewMode === READER_LANGUAGE_MODES.BOTH && (
+            {effectiveMode === READER_LANGUAGE_MODES.BOTH && (
               <Text style={styles.languageLabel}>{item.label}</Text>
             )}
             <Text style={styles.prayerText}>{item.text || 'Текст будет добавлен позже.'}</Text>
@@ -151,10 +151,11 @@ const styles = StyleSheet.create({
     marginTop: 24,
     color: colors.text,
     fontFamily: 'serif',
-    fontSize: 24,
-    lineHeight: 30,
+    fontSize: 22.5,
+    lineHeight: 28.5,
     fontWeight: '700',
-    textAlign: 'center',
+    textAlign: 'left',
+    width: '100%',
   },
 
   textBlock: {

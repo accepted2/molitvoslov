@@ -3,25 +3,34 @@ import {Alert, FlatList, Modal, Pressable, StyleSheet, Text, TextInput, View} fr
 import {useFocusEffect} from '@react-navigation/native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {StatusBar} from 'expo-status-bar';
+import Ionicons from '@expo/vector-icons/Ionicons';
 
 import {AppBackground} from '../components/layout/AppBackground';
 import {BottomNav} from '../components/navigation/BottomNav';
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
-import {createPrayerBook, getPrayerBooks, syncPrayerBooks} from '../services/prayerBooks';
+import {createPrayerBook, deletePrayerBook, getPrayerBooks, syncPrayerBooks} from '../services/prayerBooks';
 import {colors, radius, spacing} from '../theme';
+import {shareImportableContent} from '../services/shareInvitations';
+import {ContentContextMenu} from '../components/share/ContentContextMenu';
+import {BookDeleteConfirmModal} from '../components/share/BookDeleteConfirmModal';
 import {useLanguage} from '../context/LanguageContext';
 import {useInterfaceScale} from '../context/InterfaceScaleContext';
 
 export const PrayerBooksScreen = ({navigation}) => {
   const uiScale = useInterfaceScale();
-  const {t} = useLanguage();
+  const {language,t} = useLanguage();
+  const cslFont=language==='csl_traditional'?{fontFamily:'Ponomar',fontWeight:'400'}:null;
   const insets = useSafeAreaInsets();
   const [headerHeight, setHeaderHeight] = React.useState(insets.top + 56);
   React.useEffect(() => {setHeaderHeight(insets.top + 56);}, [insets.top]);
   const [books, setBooks] = useState([]);
+  const [contextItem,setContextItem]=useState(null);
   const [creating, setCreating] = useState(false);
   const [title, setTitle] = useState('');
   const [busy, setBusy] = useState(false);
+  // PERSONAL_BOOK_ACTIONS_20261117
+  const [deletingBookId, setDeletingBookId] = useState(null);
+  const [deleteCandidate, setDeleteCandidate] = useState(null); // BOOK_ACTIONS_STACKED_MODAL_20261117
 
   const load = useCallback(async () => {
     try {
@@ -41,6 +50,33 @@ export const PrayerBooksScreen = ({navigation}) => {
       load();
     }, [load])
   );
+
+  const shareBook = (book) => shareImportableContent({
+    kind:'prayerbook',
+    sourceSyncId:book.sync_id,
+    title:book.title||'Мой молитвослов',
+  });
+
+  const confirmDeleteBook = book => {
+    if (!book?.sync_id || deletingBookId) return;
+    setDeleteCandidate(book);
+  };
+  const performDeleteBook = async () => {
+    const book = deleteCandidate;
+    if (!book?.sync_id || deletingBookId) return;
+    setDeletingBookId(book.sync_id);
+    try {
+      await deletePrayerBook(book.sync_id);
+      setDeleteCandidate(null);
+      setContextItem(null);
+      setBooks(items => items.filter(item => item.sync_id !== book.sync_id));
+    } catch (error) {
+      setDeleteCandidate(null);
+      Alert.alert('Не удалось удалить молитвослов', error?.message || 'Повторите попытку.');
+    } finally {
+      setDeletingBookId(null);
+    }
+  };
 
   const create = async () => {
     if (busy) return;
@@ -74,8 +110,8 @@ export const PrayerBooksScreen = ({navigation}) => {
           ListHeaderComponent={
             <View>
               <View style={styles.intro}>
-                <Text style={[styles.introTitle, {fontSize: 20 * uiScale}]}>{t('prayerBooks.introTitle')}</Text>
-                <Text style={[styles.introText, {fontSize: 14 * uiScale}]}>{t('prayerBooks.introText')}</Text>
+                <Text style={[styles.introTitle, {fontSize: 20 * uiScale},cslFont]}>{t('prayerBooks.introTitle')}</Text>
+                <Text style={[styles.introText, {fontSize: 14 * uiScale},cslFont]}>{t('prayerBooks.introText')}</Text>
               </View>
 
               <Pressable
@@ -83,48 +119,93 @@ export const PrayerBooksScreen = ({navigation}) => {
                 style={({pressed}) => [styles.createButton, pressed && styles.pressed]}
               >
                 <Text style={styles.createIcon}>＋</Text>
-                <Text style={[styles.createButtonText, {fontSize: 15 * uiScale}]}>{t('prayerBooks.newBook')}</Text>
+                <Text style={[styles.createButtonText, {fontSize: 15 * uiScale},cslFont]}>{t('prayerBooks.newBook')}</Text>
               </Pressable>
 
               {!!books.length && (
-                <Text style={[styles.sectionLabel, {fontSize: 11 * uiScale}]}>{t('prayerBooks.myBooks')}</Text>
+                <Text style={[styles.sectionLabel, {fontSize: 11 * uiScale},cslFont]}>{t('prayerBooks.myBooks')}</Text>
               )}
             </View>
           }
           ListEmptyComponent={
             <View style={styles.emptyCard}>
               <Text style={styles.emptyMark}>✦</Text>
-              <Text style={[styles.emptyTitle, {fontSize: 18 * uiScale}]}>{t('prayerBooks.emptyTitle')}</Text>
-              <Text style={[styles.emptyText, {fontSize: 14 * uiScale}]}>{t('prayerBooks.emptyText')}</Text>
+              <Text style={[styles.emptyTitle, {fontSize: 18 * uiScale},cslFont]}>{t('prayerBooks.emptyTitle')}</Text>
+              <Text style={[styles.emptyText, {fontSize: 14 * uiScale},cslFont]}>{t('prayerBooks.emptyText')}</Text>
             </View>
           }
           renderItem={({item}) => (
-            <Pressable
-              onPress={() => navigation.navigate('PrayerBook', {bookSyncId: item.sync_id})}
-              style={({pressed}) => [styles.card, pressed && styles.pressed]}
-            >
-              <View style={styles.bookIcon}>
-                <Text style={styles.bookIconText}>✚</Text>
+            <View style={styles.card}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={t('common.open')+' '+(item.title||t('prayerBooks.title'))}
+                onPress={() => navigation.navigate('PrayerBook', {bookSyncId: item.sync_id})}
+                onLongPress={() => setContextItem(item)}
+                delayLongPress={340}
+                style={({pressed}) => [styles.cardMain, pressed && styles.pressed]}
+              >
+                <View style={styles.bookIcon}>
+                  <Text style={styles.bookIconText}>✚</Text>
+                </View>
+                <View style={styles.cardText}>
+                  <Text style={[styles.title, {fontSize: 17 * uiScale}]}>{item.title}</Text>
+                  <Text style={[styles.meta, {fontSize: 12 * uiScale}]}>
+                    {t('prayerBooks.prayersCount', {count: item.items?.length || 0})}
+                    {item.description ? ` · ${item.description}` : ''}
+                  </Text>
+                </View>
+                <Text style={styles.chevron}>›</Text>
+              </Pressable>
+              <View style={styles.actionsColumn}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={t('contextActions.share') + ' ' + (item.title || '')}
+                  onPress={() => shareBook(item)}
+                  style={({pressed}) => [styles.shareButton, pressed && styles.pressed]}
+                >
+                  <Ionicons name="share-social-outline" size={19} color="#765238"/>
+                </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={'Удалить молитвослов ' + (item.title || '')}
+                  onPress={() => confirmDeleteBook(item)}
+                  disabled={!!deletingBookId}
+                  style={({pressed}) => [styles.shareButton, styles.deleteButton, pressed && styles.pressed]}
+                >
+                  <Ionicons name="trash-outline" size={19} color="#A34738"/>
+                </Pressable>
               </View>
-              <View style={styles.cardText}>
-                <Text style={[styles.title, {fontSize: 17 * uiScale}]}>{item.title}</Text>
-                <Text style={[styles.meta, {fontSize: 12 * uiScale}]}>
-                  {t('prayerBooks.prayersCount', {count: item.items?.length || 0})}
-                  {item.description ? ` · ${item.description}` : ''}
-                </Text>
-              </View>
-              <Text style={styles.chevron}>›</Text>
-            </Pressable>
+            </View>
           )}
         />
 
         <FixedSectionHeader onHeaderHeightChange={setHeaderHeight}
           title={t('prayerBooks.title')}
+          titleTextStyle={cslFont}
           navigation={navigation}
           topInset={insets.top}
           showBack={false}
         />
         <BottomNav navigation={navigation} active="prayerbooks" />
+        <ContentContextMenu visible={!!contextItem}
+          title={contextItem?.title||t('prayerBooks.title')}
+          onClose={()=>setContextItem(null)}
+          onOpen={contextItem ? ()=>navigation.navigate('PrayerBook',{bookSyncId:contextItem.sync_id}) : null}
+          onShare={contextItem ? ()=>shareBook(contextItem) : null}
+          onDelete={contextItem ? ()=>confirmDeleteBook(contextItem) : null}
+          deleteLabel="Удалить молитвослов"
+        />
+
+        <BookDeleteConfirmModal
+          visible={!!deleteCandidate}
+          title="Удалить молитвослов?"
+          message={deleteCandidate ?
+            'Молитвослов "' + (deleteCandidate.title || 'Мой молитвослов') +
+            '" и его состав будут удалены. Сами молитвы останутся в личной библиотеке.' : ''}
+          busy={!!deletingBookId}
+          onCancel={() => setDeleteCandidate(null)}
+          onConfirm={performDeleteBook}
+        />
 
         <Modal
           visible={creating}
@@ -134,7 +215,7 @@ export const PrayerBooksScreen = ({navigation}) => {
         >
           <View style={styles.modalBackdrop}>
             <View style={styles.modalCard}>
-              <Text style={[styles.modalTitle, {fontSize: 20 * uiScale}]}>{t('prayerBooks.newBook')}</Text>
+              <Text style={[styles.modalTitle, {fontSize: 20 * uiScale},cslFont]}>{t('prayerBooks.newBook')}</Text>
               <TextInput
                 value={title}
                 onChangeText={setTitle}
@@ -145,10 +226,10 @@ export const PrayerBooksScreen = ({navigation}) => {
               />
               <View style={styles.modalActions}>
                 <Pressable onPress={() => setCreating(false)} style={styles.secondaryButton}>
-                  <Text style={styles.secondaryText}>{t('prayerBooks.cancel')}</Text>
+                  <Text style={[styles.secondaryText,cslFont]}>{t('prayerBooks.cancel')}</Text>
                 </Pressable>
                 <Pressable onPress={create} style={styles.primaryButton}>
-                  <Text style={styles.primaryText}>
+                  <Text style={[styles.primaryText,cslFont]}>
                     {busy ? t('prayerBooks.creating') : t('prayerBooks.create')}
                   </Text>
                 </Pressable>
@@ -214,13 +295,28 @@ const styles = StyleSheet.create({
   card: {
     minHeight: 72,
     marginBottom: 9,
-    paddingHorizontal: 12,
     flexDirection: 'row',
     alignItems: 'center',
     borderRadius: 16,
     borderWidth: 1,
     borderColor: 'rgba(126,82,38,0.20)',
     backgroundColor: 'rgba(255,244,222,0.96)',
+    overflow:'hidden',
+  },
+  cardMain:{
+    flex:1,minWidth:0,minHeight:72,flexDirection:'row',
+    alignItems:'center',paddingLeft:12,paddingRight:8,
+  },
+  actionsColumn: {
+    alignSelf: 'stretch', width:50, minHeight:88,
+    borderLeftWidth:1, borderLeftColor:'rgba(126,82,38,0.24)',
+    backgroundColor:'rgba(238,220,192,0.48)',
+  },
+  shareButton: {
+    flex:1, minHeight:44, alignItems:'center', justifyContent:'center',
+  },
+  deleteButton: {
+    borderTopWidth:1, borderTopColor:'rgba(126,82,38,0.20)',
   },
   bookIcon: {
     width: 42,

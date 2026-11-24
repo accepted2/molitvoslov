@@ -1,6 +1,6 @@
 import {getSavedItems, saveItem} from './savedItems';
 
-const sameBookmark = (item, position) => {
+const sameBookmark = (item, position, sourceType, metadata = {}) => {
   if (
     item.save_type !== 'bookmark' ||
     item.anchor_type !== position.anchorType ||
@@ -12,6 +12,13 @@ const sameBookmark = (item, position) => {
   const savedOffset = Number(item.metadata?.bookmark_offset || 0);
   const currentOffset = Number(position.offset || 0);
 
+  if (sourceType === 'bible') {
+    // BIBLE_COLUMN_WIDTH_GUARDS_20261117: exact page for the Bible, keep the legacy rule elsewhere.
+    const savedCount = Number(item.metadata?.bookmark_page_count || 0);
+    const currentCount = Number(metadata.bookmark_page_count || 0);
+    return savedOffset === currentOffset &&
+      (!savedCount || !currentCount || savedCount === currentCount);
+  }
   return Math.abs(savedOffset - currentOffset) < 32;
 };
 
@@ -33,7 +40,7 @@ export const saveReadingBookmark = async ({
     save_type: 'bookmark',
   });
 
-  const duplicate = existing.find((item) => sameBookmark(item, position));
+  const duplicate = existing.find((item) => sameBookmark(item, position, sourceType, metadata));
 
   if (duplicate) {
     return {

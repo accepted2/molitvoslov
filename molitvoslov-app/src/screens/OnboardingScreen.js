@@ -19,16 +19,16 @@ import {getBundledCalendarIconSource} from '../data/calendarIconAssets';
 const SLIDE_COUNT = 10;
 
 const artwork = {
-  page: require('../../assets/home/page_bg3.png'),
-  page2: require('../../assets/home/page_bg2.png'),
+  page: require('../../assets/home/page_bg3_opt.webp'),
+  page2: require('../../assets/home/page_bg2_opt.webp'),
   page4: require('../../assets/home/page_bg4.png'),
-  hero: require('../../assets/home/hero.png'),
-  matthew: require('../../assets/bible/evangelists/matthew-bg.png'),
-  morning: require('../../assets/home/morning.png'),
-  evening: require('../../assets/home/evening.png'),
-  akathists: require('../../assets/home/akathists.png'),
-  canons: require('../../assets/home/canons.png'),
-  psalter: require('../../assets/home/psalter.png'),
+  hero: require('../../assets/home/hero_opt.webp'),
+  matthew: require('../../assets/bible/evangelists/matthew-bg_opt.webp'),
+  morning: require('../../assets/home/morning_opt.webp'),
+  evening: require('../../assets/home/evening_opt.webp'),
+  akathists: require('../../assets/home/akathists_opt.webp'),
+  canons: require('../../assets/home/canons_opt.webp'),
+  psalter: require('../../assets/home/psalter_opt.webp'),
   // Keep the onboarding saint tied to the generated offline icon manifest.
   // Direct references to hashed filenames break whenever the icons are rebuilt.
   calendarSaint: getBundledCalendarIconSource({source_id: 3210}),

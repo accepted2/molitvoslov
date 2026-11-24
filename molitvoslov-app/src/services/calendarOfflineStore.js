@@ -7,6 +7,8 @@ import {
   loadYearMarkers,
 } from './calendarYearMarkers';
 
+const {unpackCalendarMonth} = require('./calendarMonthCodec');
+
 const STORAGE_PREFIX = 'calendar-day-v3';
 
 const bundledMonthLoaders = {
@@ -63,7 +65,9 @@ const getBundledMonthPayload = (year, month) => {
     return null;
   }
 
-  const payload = loader();
+  // Lossless on-demand expansion: the release can package large ru/uk
+  // saint texts once. Old uncompressed snapshots remain supported.
+  const payload = unpackCalendarMonth(loader());
   bundledMonthCache.set(key, payload);
 
   return payload;
@@ -128,33 +132,9 @@ const getMonthDateKeys = (year, month) => {
  * Данные, уже сохранённые на телефоне.
  * Они имеют приоритет над встроенным JSON.
  */
-export const getStoredCalendarDay = async (date, language = 'ru') => {
-  const key = getStorageKey(date, language);
-
-  if (!key) {
-    return null;
-  }
-
-  try {
-    // Delta days are committed atomically with public/Bible snapshots in SQLite.
-    const db = await getDatabase();
-    const row = await db.getFirstAsync(
-      'SELECT payload FROM content_delta_calendar WHERE date = ? AND language = ?',
-      [normalizeDate(date), normalizeLanguage(language)]
-    );
-    if (row?.payload) return JSON.parse(row.payload);
-    const raw = await AsyncStorage.getItem(key);
-
-    if (!raw) {
-      return null;
-    }
-
-    return JSON.parse(raw);
-  } catch (error) {
-    console.log('Ошибка чтения calendar cache:', error?.message || error);
-
-    return null;
-  }
+export const getStoredCalendarDay = async (date, language = "ru") => {
+  // Former HTTP cache must never override a freshly installed APK.
+  return null;
 };
 
 /*
@@ -215,72 +195,27 @@ export const getBundledCalendarMonth = (year, month, language = 'ru') => {
 // In APK-only mode, older AsyncStorage/OTA calendar snapshots cannot override
 // the calendar shipped with this installed application version.
 // Stored entries are preserved for possible future migrations.
-export const getOfflineCalendarDay = async (date, language = 'ru') =>
-  getBundledCalendarDay(date, language);
+export const getOfflineCalendarDay = async (date, language = "ru") => {
+  return getBundledCalendarDay(date, language);
+};
 
-export const getOfflineCalendarMonth = async (year, month, language = 'ru') =>
-  getBundledCalendarMonth(year, month, language);
+export const getOfflineCalendarMonth = async (year, month, language = "ru") => {
+  return getBundledCalendarMonth(year, month, language);
+};
 
 /*
  * Сохраняем свежий день, полученный с сервера.
  */
-export const storeCalendarDay = async (date, language = 'ru', data) => {
-  if (!data) {
-    return false;
-  }
-
-  const key = getStorageKey(date, language);
-
-  if (!key) {
-    return false;
-  }
-
-  try {
-    await AsyncStorage.setItem(key, JSON.stringify(data));
-
-    return true;
-  } catch (error) {
-    console.log('Ошибка сохранения calendar cache:', error?.message || error);
-
-    return false;
-  }
+export const storeCalendarDay = async (date, language = "ru", data) => {
+  // Calendar corrections are distributed with the next app release.
+  return false;
 };
 
 /*
  * Сохраняем все дни свежего месяца.
  */
-export const storeCalendarMonth = async (data, language = 'ru') => {
-  const days = Array.isArray(data?.days) ? data.days : [];
-
-  if (!days.length) {
-    return false;
-  }
-
-  const entries = days
-    .map((day) => {
-      if (!day?.date_gregorian) {
-        return null;
-      }
-
-      const key = getStorageKey(day.date_gregorian, language);
-
-      return key ? [key, JSON.stringify(day)] : null;
-    })
-    .filter(Boolean);
-
-  if (!entries.length) {
-    return false;
-  }
-
-  try {
-    await AsyncStorage.multiSet(entries);
-
-    return true;
-  } catch (error) {
-    console.log('Ошибка сохранения calendar month cache:', error?.message || error);
-
-    return false;
-  }
+export const storeCalendarMonth = async (data, language = "ru") => {
+  return false;
 };
 
 /*

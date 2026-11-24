@@ -1,32 +1,42 @@
 import React, {useCallback, useState} from 'react';
 
-import {ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View} from 'react-native';
+import {ActivityIndicator, Alert, FlatList, Pressable, StyleSheet, Text, View} from 'react-native';
 
 import {useFocusEffect} from '@react-navigation/native';
 
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 
 import {StatusBar} from 'expo-status-bar';
+import Ionicons from '@expo/vector-icons/Ionicons';
 
 import {AppBackground} from '../components/layout/AppBackground';
 
 import {BottomNav} from '../components/navigation/BottomNav';
+import {shareImportableContent} from '../services/shareInvitations';
+import {ContentContextMenu} from '../components/share/ContentContextMenu';
+import {BookDeleteConfirmModal} from '../components/share/BookDeleteConfirmModal';
 
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
 
-import {createMemorialBook, getMemorialBooks, syncMemorials} from '../services/memorials';
+import {createMemorialBook, deleteMemorialBook, getMemorialBooks, syncMemorials} from '../services/memorials';
 
 import {colors, radius, spacing} from '../theme';
 import {useLanguage} from '../context/LanguageContext';
+import {traditionalUiTextStyle} from '../services/traditionalUiTypography';
 
 export const MemorialScreen = ({navigation}) => {
-  const {t} = useLanguage();
+  const {t, language} = useLanguage();
+  const cslStyle = (size, height) => traditionalUiTextStyle(language, size, height);
   const insets = useSafeAreaInsets();
 
   const [headerHeight, setHeaderHeight] = React.useState(insets.top + 56);
   React.useEffect(() => {setHeaderHeight(insets.top + 56);}, [insets.top]);
 
   const [books, setBooks] = useState([]);
+  const [contextItem,setContextItem]=useState(null);
+  // PERSONAL_BOOK_ACTIONS_20261117
+  const [deletingBookId, setDeletingBookId] = useState(null);
+  const [deleteCandidate, setDeleteCandidate] = useState(null); // BOOK_ACTIONS_STACKED_MODAL_20261117
 
   const [loading, setLoading] = useState(true);
 
@@ -88,6 +98,33 @@ export const MemorialScreen = ({navigation}) => {
     }
   };
 
+  const confirmDeleteBook = book => {
+    if (!book?.sync_id || deletingBookId) return;
+    setDeleteCandidate(book);
+  };
+  const performDeleteBook = async () => {
+    const book = deleteCandidate;
+    if (!book?.sync_id || deletingBookId) return;
+    setDeletingBookId(book.sync_id);
+    try {
+      await deleteMemorialBook(book.sync_id);
+      setDeleteCandidate(null);
+      setContextItem(null);
+      setBooks(items => items.filter(item => item.sync_id !== book.sync_id));
+    } catch (error) {
+      setDeleteCandidate(null);
+      Alert.alert('Не удалось удалить помянник', error?.message || 'Повторите попытку.');
+    } finally {
+      setDeletingBookId(null);
+    }
+  };
+
+  const shareMemorial = (book) => shareImportableContent({
+    kind:'memorial',
+    sourceSyncId:book.sync_id,
+    title:book.title||'Помянник',
+  });
+
   const renderBook = ({item}) => {
     const healthCount = item.health_names?.length || 0;
 
@@ -96,36 +133,60 @@ export const MemorialScreen = ({navigation}) => {
     const photoCount = item.photos?.length || 0;
 
     return (
-      <Pressable
-        onPress={() =>
-          navigation.navigate('MemorialBook', {
-            bookSyncId: item.sync_id,
-          })
-        }
-        style={({pressed}) => [styles.card, pressed && styles.pressed]}
-      >
-        <View style={styles.cardMark}>
-          <Text style={styles.cardMarkText}>†</Text>
+      <View style={styles.card}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={'Открыть ' + (item.title||t('memorial.my'))}
+          onLongPress={()=>setContextItem(item)}
+          delayLongPress={340}
+          onPress={() =>
+            navigation.navigate('MemorialBook', {
+              bookSyncId: item.sync_id,
+            })
+          }
+          style={({pressed}) => [styles.cardMain, pressed && styles.pressed]}
+        >
+          <View style={styles.cardMark}>
+            <Text style={styles.cardMarkText}>†</Text>
+          </View>
+
+          <View style={styles.cardContent}>
+            <Text style={styles.cardTitle} numberOfLines={1}>
+              {item.title || t('memorial.my')}
+            </Text>
+
+            <Text style={[styles.cardMeta, cslStyle(12, 19)]}>
+              {t('memorial.health')}: {healthCount}
+              {'  ·  '}
+              {t('memorial.repose')}: {reposeCount}
+            </Text>
+
+            {!!photoCount && (
+              <Text style={[styles.cardPhotos, cslStyle(12, 19)]}>{t('memorial.photosCount', {count: photoCount})}</Text>
+            )}
+          </View>
+          <Text style={styles.chevron}>›</Text>
+        </Pressable>
+        <View style={styles.actionsColumn}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={'Поделиться помянником ' + (item.title || '')}
+            onPress={() => shareMemorial(item)}
+            style={({pressed})=>[styles.shareButton,pressed && styles.pressed]}
+          >
+            <Ionicons name="share-social-outline" size={19} color="#765238"/>
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={'Удалить помянник ' + (item.title || '')}
+            onPress={() => confirmDeleteBook(item)}
+            disabled={!!deletingBookId}
+            style={({pressed})=>[styles.shareButton,styles.deleteButton,pressed && styles.pressed]}
+          >
+            <Ionicons name="trash-outline" size={19} color="#A34738"/>
+          </Pressable>
         </View>
-
-        <View style={styles.cardContent}>
-          <Text style={styles.cardTitle} numberOfLines={1}>
-            {item.title || t('memorial.my')}
-          </Text>
-
-          <Text style={styles.cardMeta}>
-            {t('memorial.health')}: {healthCount}
-            {'  ·  '}
-            {t('memorial.repose')}: {reposeCount}
-          </Text>
-
-          {!!photoCount && (
-            <Text style={styles.cardPhotos}>{t('memorial.photosCount', {count: photoCount})}</Text>
-          )}
-        </View>
-
-        <Text style={styles.chevron}>›</Text>
-      </Pressable>
+      </View>
     );
   };
 
@@ -155,9 +216,9 @@ export const MemorialScreen = ({navigation}) => {
             ListHeaderComponent={
               <View>
                 <View style={styles.intro}>
-                  <Text style={styles.introTitle}>{t('memorial.introTitle')}</Text>
+                  <Text style={[styles.introTitle, cslStyle(19, 27)]}>{t('memorial.introTitle')}</Text>
 
-                  <Text style={styles.introText}>{t('memorial.introText')}</Text>
+                  <Text style={[styles.introText, cslStyle(14, 22)]}>{t('memorial.introText')}</Text>
                 </View>
 
                 {!!error && <Text style={styles.error}>{error}</Text>}
@@ -173,19 +234,19 @@ export const MemorialScreen = ({navigation}) => {
                 >
                   <Text style={styles.createIcon}>+</Text>
 
-                  <Text style={styles.createText}>{t('memorial.newBook')}</Text>
+                  <Text style={[styles.createText, cslStyle(14, 21)]}>{t('memorial.newBook')}</Text>
                 </Pressable>
 
-                {!!books.length && <Text style={styles.sectionLabel}>{t('memorial.myBooks')}</Text>}
+                {!!books.length && <Text style={[styles.sectionLabel, cslStyle(12, 18)]}>{t('memorial.myBooks')}</Text>}
               </View>
             }
             ListEmptyComponent={
               <View style={styles.emptyCard}>
                 <Text style={styles.emptyMark}>✦</Text>
 
-                <Text style={styles.emptyTitle}>{t('memorial.listEmptyTitle')}</Text>
+                <Text style={[styles.emptyTitle, cslStyle(16, 24)]}>{t('memorial.listEmptyTitle')}</Text>
 
-                <Text style={styles.emptyText}>{t('memorial.listEmptyText')}</Text>
+                <Text style={[styles.emptyText, cslStyle(14, 22)]}>{t('memorial.listEmptyText')}</Text>
               </View>
             }
           />
@@ -199,6 +260,24 @@ export const MemorialScreen = ({navigation}) => {
         />
 
         <BottomNav navigation={navigation} active="memorial" />
+        <ContentContextMenu visible={!!contextItem}
+          title={contextItem?.title||'Помянник'}
+          onClose={()=>setContextItem(null)}
+          onOpen={contextItem ? ()=>navigation.navigate('MemorialBook',{bookSyncId:contextItem.sync_id}) : null}
+          onShare={contextItem ? ()=>shareMemorial(contextItem) : null}
+          onDelete={contextItem ? ()=>confirmDeleteBook(contextItem) : null}
+          deleteLabel="Удалить помянник"
+        />
+        <BookDeleteConfirmModal
+          visible={!!deleteCandidate}
+          title="Удалить помянник?"
+          message={deleteCandidate ?
+            'Помянник "' + (deleteCandidate.title || 'Мой помянник') +
+            '" и его фотографии будут удалены. Отменить действие нельзя.' : ''}
+          busy={!!deletingBookId}
+          onCancel={() => setDeleteCandidate(null)}
+          onConfirm={performDeleteBook}
+        />
       </View>
     </AppBackground>
   );
@@ -286,14 +365,25 @@ const styles = StyleSheet.create({
   card: {
     minHeight: 86,
     marginBottom: 10,
-    padding: 14,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: radius.lg,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: 'rgba(255, 240, 216, 0.92)',
+    overflow:'hidden',
   },
+  cardMain:{
+    flex:1,minWidth:0,minHeight:86,flexDirection:'row',
+    alignItems:'center',padding:14,paddingRight:8,
+  },
+  actionsColumn: {
+    alignSelf:'stretch', width:50, minHeight:88,
+    borderLeftWidth:1, borderLeftColor:'rgba(126,82,38,0.24)',
+    backgroundColor:'rgba(238,220,192,0.48)',
+  },
+  shareButton: {flex:1, minHeight:44, alignItems:'center', justifyContent:'center'},
+  deleteButton: {borderTopWidth:1, borderTopColor:'rgba(126,82,38,0.20)'},
 
   cardMark: {
     width: 46,

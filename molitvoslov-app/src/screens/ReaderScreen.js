@@ -8,6 +8,7 @@ import {deleteSavedItem, getSavedItems, saveItem} from '../services/savedItems';
 
 import SelectableDocumentReader from '../components/reader/SelectableDocumentReader';
 import {ReaderAppearanceSheet} from '../components/reader/ReaderAppearanceSheet';
+import {shareContent, documentShareText} from '../services/contentSharing';
 
 import {
   READER_LANGUAGE_MODES,
@@ -15,6 +16,7 @@ import {
   getReaderModeForAppLanguage,
 } from '../services/readerLanguageModes';
 import {useLanguage} from '../context/LanguageContext';
+import {getPrayerTextAvailability, resolvePrayerMode, isPrayerModeAvailable, buildPrayerModeOptions} from '../services/prayerTextAvailability';
 import {
   getLocalizedTextContent,
   getLocalizedTextDescription,
@@ -39,7 +41,7 @@ import {isDarkReaderBackground, resolveReaderAppearance} from '../services/scope
 
 export const ReaderScreen = ({route, navigation}) => {
   const {language, t} = useLanguage();
-  const {slug, focusTarget = null} = route.params;
+  const {slug, focusTarget = null, miscPrayerCompactTitle = false} = route.params;
 
   const insets = useSafeAreaInsets();
 
@@ -59,10 +61,13 @@ export const ReaderScreen = ({route, navigation}) => {
 
   const [viewMode, setViewMode] = useState(READER_LANGUAGE_MODES.CHURCH);
   const changeViewMode = nextMode => {
-    setViewMode(nextMode);
+    const availability = getPrayerTextAvailability(text);
+    if (!isPrayerModeAvailable(nextMode, availability)) return;
+    const resolved = resolvePrayerMode(nextMode, availability);
+    setViewMode(resolved);
     if (slug) {
       saveReaderLanguageModePreference({
-        sourceType: 'text', sourceId: slug, mode: nextMode,
+        sourceType: 'text', sourceId: slug, mode: resolved,
       }).catch(error => console.warn('[reader language] save:', error?.message || error));
     }
   };
@@ -124,29 +129,18 @@ export const ReaderScreen = ({route, navigation}) => {
       return;
     }
 
-    let nextMode = getReaderModeForAppLanguage(language, {
+    const availability = getPrayerTextAvailability(text);
+    let nextMode = resolvePrayerMode(getReaderModeForAppLanguage(language, {
       hasRussian: hasRussianTranslation,
       hasUkrainian: hasUkrainianTranslation,
       hasTraditional: hasTraditionalTranslation,
-    });
-
+    }), availability);
     const preferred = focusTarget?.preferredLanguage;
-
-
-    if (preferred === 'russian') {
-      nextMode = hasRussianTranslation
-        ? READER_LANGUAGE_MODES.RUSSIAN
-        : READER_LANGUAGE_MODES.CHURCH;
+    // Respect deep links, but never let an absent translation become active.
+    if (['church', 'russian', 'both', 'traditional'].includes(preferred)) {
+      nextMode = resolvePrayerMode(preferred, availability);
     } else if (preferred === 'ukrainian') {
-      nextMode = hasUkrainianTranslation
-        ? READER_LANGUAGE_MODES.UKRAINIAN
-        : READER_LANGUAGE_MODES.CHURCH;
-    } else if (preferred === 'church') {
-      nextMode = READER_LANGUAGE_MODES.CHURCH;
-    } else if (preferred === 'traditional') {
-      nextMode = hasTraditionalTranslation
-        ? READER_LANGUAGE_MODES.TRADITIONAL
-        : READER_LANGUAGE_MODES.CHURCH;
+      nextMode = resolvePrayerMode('russian', availability);
     }
 
     setViewMode(nextMode);
@@ -155,11 +149,9 @@ export const ReaderScreen = ({route, navigation}) => {
       getReaderLanguageModePreference({sourceType: 'text', sourceId: slug})
         .then(savedMode => {
           if (!active) return;
-          const supported = (savedMode === 'russian' || savedMode === 'both')
-            ? (hasRussianTranslation ? savedMode : 'church')
-            : savedMode === 'traditional'
-              ? (hasTraditionalTranslation ? savedMode : 'church')
-              : 'church';
+          const supported = savedMode
+            ? resolvePrayerMode(savedMode, getPrayerTextAvailability(text))
+            : nextMode;
           setViewMode(supported);
         })
         .catch(error => console.warn('[reader language] load:', error?.message || error));
@@ -254,6 +246,7 @@ export const ReaderScreen = ({route, navigation}) => {
       };
     }
 
+    const effectiveMode = resolvePrayerMode(viewMode, getPrayerTextAvailability(text));
     const wholeTextSaved = savedItems.some(
       (item) =>
         item.anchor_type === 'text' &&
@@ -308,14 +301,14 @@ export const ReaderScreen = ({route, navigation}) => {
         });
     };
 
-    if (viewMode === READER_LANGUAGE_MODES.TRADITIONAL) {
+    if (effectiveMode === READER_LANGUAGE_MODES.TRADITIONAL) {
       appendBlock({
         id: 3,
         value: text.traditional_content?.trim() || 'Те́кстъ въ традиціо́нномъ начерта́ніи отсꙋ́тствꙋетъ.',
         language: 'traditional',
         className: !text.traditional_content?.trim() && text.translation?.trim() ? 'secondary' : '',
       });
-    } else if (viewMode === READER_LANGUAGE_MODES.UKRAINIAN) {
+    } else if (effectiveMode === READER_LANGUAGE_MODES.UKRAINIAN) {
       appendBlock({
         id: 4,
         value: text.translation_uk || text.translation || text.content || '',
@@ -326,7 +319,7 @@ export const ReaderScreen = ({route, navigation}) => {
             : 'church',
         className: text.translation_uk?.trim() || text.translation?.trim() ? 'secondary' : '',
       });
-    } else if (viewMode === READER_LANGUAGE_MODES.RUSSIAN) {
+    } else if (effectiveMode === READER_LANGUAGE_MODES.RUSSIAN) {
       appendBlock({
         id: 2,
         value: text.translation?.trim() || 'Перевод пока отсутствует.',
@@ -341,7 +334,7 @@ export const ReaderScreen = ({route, navigation}) => {
       });
     }
 
-    if (viewMode === READER_LANGUAGE_MODES.BOTH) {
+    if (effectiveMode === READER_LANGUAGE_MODES.BOTH) {
       appendBlock({
         id: 2,
         value: text.translation?.trim() || 'Перевод пока отсутствует.',
@@ -351,6 +344,8 @@ export const ReaderScreen = ({route, navigation}) => {
     }
 
     return {
+      miscPrayerCompactTitle: !!miscPrayerCompactTitle, // MOLITVOSLOV_MISC_PRAYER_COMPACT_TITLE_V1
+      presentation: 'standalone-prayer',
       title: getLocalizedTextTitle(text, language) || t('common.reading'),
 
       description: getLocalizedTextDescription(text, language),
@@ -364,11 +359,8 @@ export const ReaderScreen = ({route, navigation}) => {
       },
 
       viewSwitcher: {
-        activeKey: viewMode,
-        options: buildReaderLanguageOptions({
-          hasRussian: true,
-          hasTraditional: true,
-        }),
+        activeKey: effectiveMode,
+        options: buildPrayerModeOptions(getPrayerTextAvailability(text)),
       },
 
       progressAnchorType: 'text',
@@ -402,6 +394,7 @@ export const ReaderScreen = ({route, navigation}) => {
     slug,
     text,
     viewMode,
+    miscPrayerCompactTitle,
     t,
   ]);
 
@@ -443,6 +436,11 @@ export const ReaderScreen = ({route, navigation}) => {
       />
 
       <ReaderAppearanceSheet
+        onShare={() => shareContent({
+          title:getLocalizedTextTitle(text,language)||'Молитва',
+          text:documentShareText(documentData),
+          screen:'Reader',params:{slug},
+        })}
         visible={appearanceVisible}
         onClose={() => setAppearanceVisible(false)}
         appearance={appearance}
@@ -458,6 +456,7 @@ export const ReaderScreen = ({route, navigation}) => {
         topInset={insets.top}
         showTitle
         compactReading
+        singleLineTitle={miscPrayerCompactTitle}
         readingHidden={readingChromeHidden}
         showMenu
         onMenuPress={() => setAppearanceVisible(true)}

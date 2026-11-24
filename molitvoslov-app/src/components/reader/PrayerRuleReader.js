@@ -5,10 +5,13 @@ import {WebView} from 'react-native-webview';
 import {LinearGradient} from 'expo-linear-gradient';
 
 import {deleteSavedItem, saveItem} from '../../services/savedItems';
+import {shareContent} from '../../services/contentSharing';
 import {useLanguage} from '../../context/LanguageContext';
 import {getReadingSettings, DEFAULT_READING_SETTINGS} from '../../services/readerPreferences';
 import {applyReaderAppearance, resolveReaderAppearance} from '../../services/scopedReaderAppearance';
 import {getCachedPonomarFontDataUri, loadPonomarFontDataUri} from '../../services/ponomarFont';
+import {getCommunionRussianRubric} from '../../services/communionRussianCompletion';
+import {completeCommunionTraditionalRule, getCommunionTraditionalCountRanges} from '../../services/communionTraditionalRule';
 import {getCommunionRuleKind, isCommunionPrayerHeading, isCommunionDoxologyPair, buildCommunionTypography, compactCommunionAlleluiaDisplay} from '../../services/communionRuleTypography';
 
 const scriptSafeJson = (value) =>
@@ -352,6 +355,54 @@ const HTML_TEMPLATE = String.raw`
       border-color: rgba(123, 79, 36, 0.28);
     }
 
+    .section-header.has-prayer-share .prayer-title {
+      padding-left: 80px;
+    }
+    .prayer-share-action {
+      position:absolute;
+      top:50%;
+      left:39px;
+      transform:translateY(-50%);
+      display:flex;
+      width:34px;
+      height:34px;
+      padding:0;
+      justify-content:center;
+      align-items:center;
+      border:1px solid var(--border);
+      border-radius:17px;
+      color:var(--secondary);
+      background:rgba(241,223,194,.94);
+      touch-action:manipulation;
+    }
+    .prayer-share-action svg {pointer-events:none}
+    /* Left-side context menu for a single prayer. */
+    .section-header.has-prayer-share .prayer-title { padding-left: 43px; }
+    .prayer-actions-trigger {
+      position:absolute;left:0;top:50%;transform:translateY(-50%);
+      width:35px;height:35px;display:flex;align-items:center;justify-content:center;
+      border-radius:18px;border:1px solid var(--border);background:rgba(241,223,194,.96);
+      /* Keep dark dots legible on the existing cream button, even when the
+         reader's --secondary becomes light in night/custom mode. */
+      color:#4B301D;font-size:27px;line-height:1;z-index:2;
+    }
+    .prayer-actions-menu {
+      display:none;position:absolute;left:0;top:calc(50% + 18px);
+      width:206px;padding:5px;border-radius:13px;background:#FFF4DE;
+      border:1px solid var(--border);box-shadow:0 6px 16px rgba(48,27,12,.22);z-index:30;
+    }
+    .prayer-actions-menu.is-open {display:flex;flex-direction:column;}
+    .prayer-actions-menu .favorite-action,
+    .prayer-actions-menu .prayer-share-action {
+      position:relative;top:auto;left:auto;transform:none;width:100%;height:43px;
+      display:flex;align-items:center;justify-content:flex-start;gap:10px;
+      padding:0 11px;border:0;border-radius:9px;background:transparent;
+      color:#4B301D;
+      font-size:14px;font-weight:600;text-align:left;
+    }
+    .prayer-actions-menu .prayer-action-label { flex:1; }
+    .prayer-actions-menu .save-heart-icon,
+    .prayer-actions-menu .prayer-share-action svg {width:18px;height:18px;}
     .save-heart-icon {
       display: block;
       width: 19px;
@@ -594,6 +645,351 @@ const HTML_TEMPLATE = String.raw`
       padding-bottom: 12px;
       border-bottom: 1px solid var(--border);
     }
+    /* Communion preparation only: title-only sections join their text. */
+    body.communion-preparation .rule-item.communion-heading-only {
+      border-bottom: 0; padding-bottom: 0; margin-bottom: 0;
+    }
+    body.communion-preparation .rule-item.communion-heading-only .section-title {
+      margin-bottom: 6px;
+    }
+    /* RU parallel font follows the live reader font-size slider. */
+    body.communion-preparation .translation-text {
+      font-size: var(--reading-font-size, 17px) !important;
+      line-height: 1.7 !important;
+    }
+    /* Communion PREPARATION, Russian text only: preserve the explicit
+       newlines separating doxologies from the following hymn text. */
+    body.communion-preparation .reader-text.communion-russian-linebreaks,
+    body.communion-preparation .translation-text.communion-russian-linebreaks {
+      white-space: pre-line;
+    }
+    /* Communion preparation: compact verses, brown headings and rubrics. */
+    body.communion-preparation .rule-title,
+    body.communion-preparation .section-title,
+    body.communion-preparation .section-header .prayer-title {
+      color: var(--reader-section-heading, var(--accent-dark, #5A3822)) !important;
+    }
+    body.communion-preparation .rule-item {
+      margin-bottom: 5px;
+      padding-bottom: 7px;
+    }
+    body.communion-preparation .translation-text {
+      font-size: var(--reading-font-size, 17px) !important;
+      line-height: 1.7 !important;
+    }
+    body.communion-preparation .rule-item.communion-heading-only {
+      border-bottom: 0 !important;
+      margin-bottom: 0 !important;
+      padding-bottom: 0 !important;
+    }
+    body.communion-preparation .rule-item.communion-heading-only .section-title {
+      margin-bottom: 4px;
+    }
+    body.communion-preparation .translation-text .communion-ru-rubric {
+      display: inline;
+      color: var(--liturgical) !important;
+      font-weight: 700;
+      font-style: italic;
+      margin-right: 5px;
+    }
+    /* Communion preparation rhythm v2 - scoped, no source edits */
+    /* Same brown heading ink in Church Slavonic, Russian and parallel. */
+    body.communion-preparation .rule-title,
+    body.communion-preparation .section-title,
+    body.communion-preparation .section-header .prayer-title,
+    body.communion-preparation.traditional-mode .rule-title,
+    body.communion-preparation.traditional-mode .section-title,
+    body.communion-preparation.traditional-mode .section-header .prayer-title {
+      color: var(--reader-section-heading, #5A3822) !important;
+    }
+    /* Remove the repeated 12px bottom margin + padding on each verse. */
+    body.communion-preparation .rule-item {
+      margin-bottom: 2px !important;
+      padding-bottom: 4px !important;
+    }
+    /* No border/extra gap between a title-only section and its text. */
+    body.communion-preparation .rule-item.communion-heading-only {
+      border-bottom: 0 !important;
+      margin-bottom: 0 !important;
+      padding-bottom: 0 !important;
+    }
+    /* Exactly +2px below the prior compact section heading (4 -> 6). */
+    body.communion-preparation .rule-item > .section-title {
+      margin-bottom: 6px !important;
+    }
+    /* Prayer headings in the action header: prior 8 -> 10. */
+    body.communion-preparation .rule-item > .section-header {
+      margin-bottom: 10px !important;
+    }
+    /* "Слава" and "И ныне" are within one continuous hymn, not two
+       widely separated paragraphs. */
+    body.communion-preparation .rule-item.communion-joined-troparion-first {
+      border-bottom: 0 !important;
+      margin-bottom: 0 !important;
+      padding-bottom: 0 !important;
+    }
+    /* The Russian text renderer already inserts a <br> at its doxology
+       boundary. White-space:pre-line would turn the original newline
+       into a SECOND visible break. Keep the DOM break, not both. */
+    body.communion-preparation .reader-text.communion-russian-linebreaks {
+      white-space: normal !important;
+    }
+    /* Parallel translation is not passed through renderTextItem; retain
+       its single source newline here without a generated <br>. */
+    body.communion-preparation .translation-text.communion-russian-linebreaks {
+      white-space: pre-line !important;
+    }
+    /* communion-final-indicators-and-titles-20261121 */
+    /* Remove only dividers below the final small directions, such as
+       "Потом тропари", "Также молитву" and "И ещё". */
+    body.communion-preparation .rule-item.communion-final-indicator {
+      border-bottom: 0 !important;
+      margin-bottom: 2px !important;
+      padding-bottom: 0 !important;
+    }
+    /* Give selected long headings two deliberate centered lines. */
+    body.communion-preparation .communion-split-title {
+      text-align: center !important;
+      word-break: normal !important;
+      overflow-wrap: normal !important;
+    }
+    body.communion-preparation .communion-split-title .communion-title-line,
+    body.communion-preparation .communion-split-title .communion-title-author {
+      display: block;
+      text-align: center;
+    }
+    body.communion-preparation .communion-split-title .communion-title-author {
+      font-size: clamp(15px, 4.2vw, 18px);
+      line-height: 1.35;
+    }
+    body.communion-preparation .communion-split-title .communion-title-year {
+      display: inline-block;
+      white-space: nowrap;
+    }
+    body.communion-preparation .section-header.has-prayer-share .communion-split-title {
+      padding-left: 43px;
+      padding-right: 8px;
+    }
+    /* CS_TRAD_COMMUNION_SOURCE_20261121 */
+    /* Exact uploaded traditional text; the same font and rubric palette. */
+    body.communion-preparation.traditional-mode.communion-traditional-source .section-title {
+      font-family: 'Ponomar', Georgia, 'Times New Roman', serif;
+      color: var(--reader-section-heading, #5A3822) !important;
+      font-size: 20px;
+      line-height: 1.35;
+      text-align: center;
+      margin-bottom: 6px !important;
+    }
+    body.communion-preparation.traditional-mode.communion-traditional-source .rule-item.communion-traditional-heading {
+      border-bottom: 0 !important;
+      margin-bottom: 0 !important;
+      padding-bottom: 0 !important;
+    }
+    body.communion-preparation.traditional-mode.communion-traditional-source .reader-text {
+      white-space: pre-line;
+    }
+    /* COMMUNION_TRAD_VISUAL_V3 */
+    /* Non-bold brown Ponomar headings as in the combined canons. */
+    body.communion-preparation.traditional-mode.communion-traditional-source .rule-title,
+    body.communion-preparation.traditional-mode.communion-traditional-source .section-title {
+      font-family: 'Ponomar', Georgia, serif !important;
+      font-weight: 400 !important; font-style: normal !important;
+      color: var(--secondary, #5A3822) !important;
+    }
+    body.communion-preparation.traditional-mode.communion-traditional-source .section-title {
+      font-size: 20px; line-height: 1.5; margin-bottom: 6px !important;
+    }
+    /* All five troparia of tone eight and the penitential troparia form one unit. */
+    body.communion-preparation.traditional-mode.communion-traditional-source .rule-item.communion-trad-joined {
+      border-bottom: 0 !important; margin-bottom: 3px !important; padding-bottom: 1px !important;
+    }
+    body.communion-preparation.traditional-mode.communion-traditional-source .rule-item.communion-trad-joined .communion-initial {
+      font-size: inherit !important; font-weight: 400 !important;
+    }
+    /* Doxologies red, no extra heading or colon. */
+    body.communion-preparation.traditional-mode.communion-traditional-source .rule-item.communion-trad-glory .reader-text,
+    body.communion-preparation.traditional-mode.communion-traditional-source .rule-item.communion-trad-glory .reader-text span {
+      color: var(--liturgical, #9B3B32) !important;
+    }
+    body.communion-preparation.traditional-mode.communion-traditional-source .rule-item.communion-trad-refrain .reader-text {
+      color: var(--liturgical, #9B3B32) !important;
+    }
+    /* Festival instruction and "other verses" are comments. */
+    body.communion-preparation.traditional-mode.communion-traditional-source .rule-item.communion-trad-note {
+      border-bottom: 0 !important; margin-bottom: 3px !important; padding-bottom: 0 !important;
+    }
+    body.communion-preparation.traditional-mode.communion-traditional-source .rule-item.communion-trad-note .instruction {
+      color: var(--secondary, #5A3822) !important;
+      font-size: 14px; line-height: 1.4; font-style: italic; text-align: center;
+    }
+    /* Count and bow notes: bold brown, not liturgical red. */
+    body.communion-preparation.traditional-mode.communion-traditional-source .reader-text span.communion-note,
+    body.communion-preparation.traditional-mode.communion-traditional-source .reader-text span.communion-count-note {
+      color: var(--secondary, #5A3822) !important;
+      font-weight: 700 !important; font-style: normal !important; white-space: nowrap;
+    }
+    /* COMMUNION_TRAD_ODE_LABELS_V4 */
+    /* The editorial Church Slavonic rubric is shown once above its verse. */
+    body.communion-preparation.traditional-mode.communion-traditional-source .communion-trad-rubric-name {
+      font-family: 'Ponomar', Georgia, serif !important;
+      color: var(--liturgical, #9B3B32) !important;
+      font-size: 15px; line-height: 1.5; font-weight: 400 !important;
+      text-align: left !important; margin: 2px 0 1px;
+    }
+    /* Refrain lyrics have normal ink: ONLY their first letter is red. */
+    body.communion-preparation.traditional-mode.communion-traditional-source .rule-item.communion-trad-refrain .reader-text,
+    body.communion-preparation.traditional-mode.communion-traditional-source .rule-item.communion-trad-refrain .reader-text span {
+      color: var(--text) !important;
+    }
+    body.communion-preparation.traditional-mode.communion-traditional-source .rule-item.communion-trad-refrain .reader-text span.communion-initial,
+    body.communion-preparation.traditional-mode.communion-traditional-source .reader-text span.communion-initial {
+      color: var(--liturgical, #9B3B32) !important;
+      font-weight: 400 !important; font-size: inherit !important;
+    }
+    /* The Church Slavonic instructions are a left-aligned civil-font note. */
+    body.communion-preparation.traditional-mode.communion-traditional-source .rule-item.communion-trad-note .instruction {
+      font-family: Georgia, 'Times New Roman', serif !important;
+      text-align: left !important;
+      font-style: italic; font-weight: 400 !important;
+      margin-left: 0 !important; padding-left: 0 !important;
+    }
+    /* Cyrillic numerals with titlo must not be split across two lines. */
+    body.communion-preparation.traditional-mode.communion-traditional-source .reader-text span.communion-note,
+    body.communion-preparation.traditional-mode.communion-traditional-source .reader-text span.communion-count-note {
+      color: var(--secondary, #5A3822) !important;
+      font-weight: 700 !important; white-space: nowrap !important;
+    }
+    /* COMMUNION_TRAD_INLINE_V5_20261121 */
+    /* Rubric and first word share one flowing line, no heading row. */
+    body.communion-preparation.traditional-mode.communion-traditional-source .reader-inline.communion-trad-inline {
+      display: block; margin: 0; padding: 0;
+    }
+    body.communion-preparation.traditional-mode.communion-traditional-source .reader-inline.communion-trad-inline .reader-text {
+      display: inline !important;
+    }
+    body.communion-preparation.traditional-mode.communion-traditional-source .reader-inline.communion-trad-inline .reader-inline-label.communion-trad-rubric-name {
+      display: inline !important; font-family: 'Ponomar', Georgia, serif !important;
+      font-size: inherit !important; line-height: inherit !important;
+      font-weight: 400 !important; font-style: normal !important;
+      color: var(--liturgical, #9B3B32) !important;
+      margin: 0 0.32em 0 0 !important; padding: 0 !important;
+      white-space: nowrap;
+    }
+    /* Mild weight rather than bold, with a very small optical adjustment. */
+    body.communion-preparation.traditional-mode.communion-traditional-source .rule-title,
+    body.communion-preparation.traditional-mode.communion-traditional-source .section-title,
+    body.communion-preparation.traditional-mode.communion-traditional-source .section-header .prayer-title {
+      font-family: 'Ponomar', Georgia, serif !important;
+      font-weight: 500 !important;
+      -webkit-text-stroke: 0.12px currentColor;
+      color: var(--secondary, #5A3822) !important;
+    }
+    /* Previous V3 correctly removed dividers INSIDE the troparia; bring
+       back exactly the separator after the last item of each hymn group. */
+    body.communion-preparation.traditional-mode.communion-traditional-source .rule-item.communion-trad-joined.communion-trad-end {
+      border-bottom: 1px solid var(--border) !important;
+      padding-bottom: 8px !important;
+      margin-bottom: 9px !important;
+    }
+    /* Initial letters, including the second troparion inside one Text. */
+    body.communion-preparation.traditional-mode.communion-traditional-source .rule-item.communion-trad-joined .reader-text span.communion-initial,
+    body.communion-preparation.traditional-mode.communion-traditional-source .reader-inline.communion-trad-inline .reader-text span.communion-initial {
+      color: var(--liturgical, #9B3B32) !important;
+      font-size: 1.18em !important; font-weight: 500 !important;
+    }
+    /* CS_TRAD_COMPACT_WIDTH_AND_INTERNAL_DIVIDER_V6_20261121 */
+    /* Wider lines, natural word wrapping, and justified Church Slavonic. */
+    body.communion-preparation.traditional-mode.communion-traditional-source {
+      padding-left: 8px !important;
+      padding-right: 8px !important;
+    }
+    body.communion-preparation.traditional-mode.communion-traditional-source .reader-text,
+    body.communion-preparation.traditional-mode.communion-traditional-source .reader-inline.communion-trad-inline {
+      text-align: justify !important;
+      text-align-last: auto !important;
+      text-justify: inter-word !important;
+      word-break: normal !important;
+      overflow-wrap: break-word !important;
+      -webkit-hyphens: auto !important;
+      hyphens: auto !important;
+    }
+    /* Tone 8 is one connected sequence: no large blanks below
+       "Слава..." or "И ныне..." and no separators inside the sequence. */
+    body.communion-preparation.traditional-mode.communion-traditional-source .rule-item.communion-trad-tone8:not(.communion-trad-end) {
+      margin-top: 0 !important;
+      margin-bottom: 1px !important;
+      padding-top: 0 !important;
+      padding-bottom: 0 !important;
+      border-bottom: 0 !important;
+    }
+    body.communion-preparation.traditional-mode.communion-traditional-source .rule-item.communion-trad-tone8 .reader-text {
+      margin: 0 !important;
+      padding: 0 !important;
+      line-height: 1.52 !important;
+    }
+    body.communion-preparation.traditional-mode.communion-traditional-source .rule-item.communion-trad-tone8.communion-trad-glory .reader-text {
+      line-height: 1.3 !important;
+    }
+    /* All three "Прїиди́те" invocations have capital red initials. */
+    body.communion-preparation.traditional-mode.communion-traditional-source .rule-item.communion-trad-three-worship .reader-text span.communion-initial {
+      text-transform: uppercase !important;
+      color: var(--liturgical, #9B3B32) !important;
+      font-size: 1.16em !important;
+      font-weight: 500 !important;
+    }
+    /* "Усладил..." and "Во светлостех..." are separate prayers inside
+       one source Text. Hide ONLY their literal newline in presentation:
+       insert a visible divider without changing a single source offset. */
+    body.communion-preparation.traditional-mode.communion-traditional-source .rule-item.communion-trad-internal-prayers .reader-text {
+      white-space: normal !important;
+    }
+    body.communion-preparation.traditional-mode.communion-traditional-source .rule-item.communion-trad-internal-prayers .reader-text .communion-short-prayer-divider {
+      margin: 6px 0 7px !important;
+      border-top: 1px solid var(--border) !important;
+    }
+    /* COMMUNION_TRAD_ODE9_NOTES_V7_20261121 */
+    /* 9th Ode penitential troparia have the SAME compact rhythm as
+       tone-eight troparia. No lines or paragraph gaps between Glory,
+       its troparion, And now, and the following Theotokion. */
+    body.communion-preparation.traditional-mode.communion-traditional-source .rule-item.communion-trad-penitential:not(.communion-trad-end) {
+      border-bottom: 0 !important;
+      margin-top: 0 !important;
+      margin-bottom: 1px !important;
+      padding-top: 0 !important;
+      padding-bottom: 0 !important;
+    }
+    body.communion-preparation.traditional-mode.communion-traditional-source .rule-item.communion-trad-penitential .reader-text {
+      margin-top: 0 !important;
+      margin-bottom: 0 !important;
+      padding-top: 0 !important;
+      padding-bottom: 0 !important;
+      line-height: 1.48 !important;
+    }
+    body.communion-preparation.traditional-mode.communion-traditional-source .rule-item.communion-trad-penitential.communion-trad-glory .reader-text {
+      line-height: 1.3 !important;
+    }
+    body.communion-preparation.traditional-mode.communion-traditional-source .rule-item.communion-trad-penitential .reader-inline {
+      margin-top: 0 !important;
+      margin-bottom: 0 !important;
+      padding-top: 0 !important;
+      padding-bottom: 0 !important;
+    }
+    /* The three short notes are Church Slavonic editorial directions.
+       Georgia from the older V4 style caused Cyrillic glyph fallback;
+       use the same Ponomar font as the traditional prayer text. */
+    body.communion-preparation.traditional-mode.communion-traditional-source .rule-item.communion-trad-note .instruction {
+      font-family: 'Ponomar', Georgia, 'Times New Roman', serif !important;
+      color: var(--secondary, #5A3822) !important;
+      font-size: 15px !important;
+      font-weight: 400 !important;
+      font-style: normal !important;
+      line-height: 1.45 !important;
+      text-align: left !important;
+      text-align-last: left !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      letter-spacing: normal !important;
+    }
     /* The first "Слава..." text and next "И ныне..." text form one
        troparion. No line between them; the second item retains the
        ordinary divider after the whole two-part hymn. */
@@ -833,7 +1229,7 @@ const HTML_TEMPLATE = String.raw`
       position: fixed;
       left: 14px;
       right: 14px;
-      bottom: 22px;
+      bottom: calc(104px + env(safe-area-inset-bottom, 0px));
       z-index: 1002;
       min-height: 52px;
       padding: 7px 8px 7px 12px;
@@ -885,8 +1281,20 @@ const HTML_TEMPLATE = String.raw`
       line-height: 34px;
     }
 
+    #selection-share {
+      height: 36px;
+      min-width: 72px;
+      padding: 0 7px;
+      border-radius: 10px;
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--accent-dark);
+      font-size: 12px;
+      font-weight: 700;
+    }
+    #selection-share:disabled {opacity: 0.38;}
     #selection-save {
-      min-width: 96px;
+      min-width: 78px;
       height: 36px;
       padding: 0 14px;
       border: 0;
@@ -1011,6 +1419,7 @@ const HTML_TEMPLATE = String.raw`
       ×
     </button>
 
+    <button id="selection-share" type="button">Поделиться</button>
     <button
       id="selection-save"
       type="button"
@@ -1045,6 +1454,7 @@ const HTML_TEMPLATE = String.raw`
       document.getElementById(
         'selection-save'
       );
+    const shareButton = document.getElementById('selection-share');
 
     const cancelButton =
       document.getElementById(
@@ -1231,6 +1641,12 @@ const HTML_TEMPLATE = String.raw`
       button.replaceChildren(
         svg
       );
+      if (button.classList.contains('prayer-action-menu-save')) {
+        const label=document.createElement('span');
+        label.className='prayer-action-label';
+        label.textContent=active?'Убрать из избранного':'Добавить к себе';
+        button.appendChild(label);
+      }
 
       button.title =
         active
@@ -1243,6 +1659,36 @@ const HTML_TEMPLATE = String.raw`
       );
     };
 
+
+    const makePrayerShareButton = itemId => {
+      const button = el('button','prayer-share-action');
+      button.type='button';
+      button.title='Поделиться молитвой';
+      button.setAttribute('aria-label',button.title);
+      button.dataset.itemId=String(itemId);
+      const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
+      for(const [key,value] of Object.entries({
+        viewBox:'0 0 24 24',width:'19',height:'19',fill:'none',
+        stroke:'currentColor','stroke-width':'1.8','stroke-linecap':'round',
+        'stroke-linejoin':'round'
+      })) svg.setAttribute(key,value);
+      const line=document.createElementNS('http://www.w3.org/2000/svg','path');
+      line.setAttribute('d','M8.7 13.5 15.3 17.4 M15.3 6.6 8.7 10.5');
+      svg.appendChild(line);
+      [[18,5],[6,12],[18,19]].forEach(coords=>{
+        const circle=document.createElementNS('http://www.w3.org/2000/svg','circle');
+        circle.setAttribute('cx',String(coords[0]));
+        circle.setAttribute('cy',String(coords[1]));
+        circle.setAttribute('r','3');
+        svg.appendChild(circle);
+      });
+      button.appendChild(svg);
+      const label=document.createElement('span');
+      label.className='prayer-action-label';
+      label.textContent='Поделиться';
+      button.appendChild(label);
+      return button;
+    };
 
     const titleEl = (
       tag,
@@ -1946,6 +2392,7 @@ const HTML_TEMPLATE = String.raw`
       isEveningRule ||
       isMorningRule;
     const isCommunionReadingRule = !!DATA.communionKind;
+    const isCommunionPreparation = DATA.communionKind === 'preparation';
 
     // Shared rubric parsing for historical Church Slavonic morning and
     // evening texts; other modes retain their existing formatting.
@@ -2767,6 +3214,29 @@ const HTML_TEMPLATE = String.raw`
       };
 
 
+    const formatCommunionLongTitle = node => {
+      if(DATA.communionKind !== 'preparation' || !node)return;
+      const title=String(node.textContent||'').trim();
+      const norm=normalizeLiturgicalValue(title);
+      const basil=/^молитва (?:1|5) я(?: |$)/u.test(norm) && /василия великого/u.test(norm);
+      const zlat=/^молитва свт иоанна златоустого/u.test(norm);
+      if(!basil && !zlat)return;
+      const at=basil?title.indexOf(',')+1:title.indexOf(' ');
+      if(at<=0)return;
+      const first=title.slice(0,at).trim();
+      const rest=title.slice(basil?at:at+1).trim();
+      if(!first || !rest)return;
+      const top=el('span','communion-title-line',first);
+      const bottom=el('span','communion-title-author');
+      const date=/^(.*?)(\s*\([^)]*\))\s*$/u.exec(rest);
+      if(date){
+        bottom.appendChild(document.createTextNode(date[1].trimEnd()+' '));
+        bottom.appendChild(el('span','communion-title-year',date[2].trim()));
+      }else{bottom.textContent=rest;}
+      node.replaceChildren(top,bottom);
+      node.classList.add('communion-split-title');
+      node.setAttribute('aria-label',title);
+    };
     const renderRule = () => {
       if (DATA.viewMode === 'traditional') {
         document.body.classList.add('traditional-mode');
@@ -2782,6 +3252,9 @@ const HTML_TEMPLATE = String.raw`
         document.body.classList.add(
           'morning-rule'
         );
+      }
+      if (DATA.rule?.communionTraditionalEdition) {
+        document.body.classList.add('communion-traditional-source');
       }
       if (isCommunionReadingRule) {
         document.body.classList.add('communion-reading-rule');
@@ -2890,7 +3363,34 @@ const HTML_TEMPLATE = String.raw`
       const allItems = DATA.rule.items || [];
       // Calculated in native JS and included in the WebView payload.
       const communionJoinedTroparionIds = new Set(DATA.communionJoinedTroparionIds || []);
+      const communionFinalIndicators=new Set();
+      if(DATA.communionKind === 'preparation'){
+        let afterFinalHeading=false;
+        for(const entry of allItems){
+          const raw=String(entry?.title||entry?.content||'');
+          const heading=normalizeLiturgicalValue(raw);
+          if(/^приходя же причаст/u.test(heading) && /симеон/u.test(heading)){
+            afterFinalHeading=true;
+            continue;
+          }
+          if(!afterFinalHeading || entry?.item_type!=='instruction')continue;
+          if(/^(?:затем|и стихи|потом тропари|также молитву|и еще)$/u.test(heading)){
+            communionFinalIndicators.add(Number(entry.id));
+          }
+        }
+      }
 
+
+      const communionHeadingOnlyIds = new Set();
+      if (isCommunionPreparation) {
+        for (let i=0; i+1<allItems.length; i++) {
+          const a=allItems[i], b=allItems[i+1];
+          if(a?.item_type==='section' && b?.item_type==='text' && b.text &&
+             String(a.title||a.title_uk||'').trim() &&
+             !String(a.content||a.content_uk||'').trim())
+            communionHeadingOnlyIds.add(Number(a.id));
+        }
+      }
       // "Ангел вопияше" and "Светися, светися" are consecutive Text
       // objects. Identify both by source text, or by known Text IDs,
       // regardless of the title or currently selected reading language.
@@ -2923,7 +3423,7 @@ const HTML_TEMPLATE = String.raw`
         !allItems.some(item => item.item_type === 'text' && item.text?.traditional_content?.trim());
       const lacksRussian = (DATA.viewMode === 'russian' || DATA.viewMode === 'both') &&
         !allItems.some(item => item.item_type === 'text' && item.text?.translation?.trim());
-      if (lacksTraditional || (lacksRussian && DATA.viewMode === 'russian')) {
+      if (!isCommunionPreparation && (lacksTraditional || (lacksRussian && DATA.viewMode === 'russian'))) {
         reader.appendChild(
           el('div', 'rule-description', lacksTraditional
             ? 'Те́кстъ въ традиціо́нномъ начерта́ніи отсꙋ́тствꙋетъ.'
@@ -2946,6 +3446,28 @@ const HTML_TEMPLATE = String.raw`
               item.id
             );
 
+          if(isCommunionPreparation && communionHeadingOnlyIds.has(Number(item.id)))
+            wrapper.classList.add('communion-heading-only');
+          if(communionFinalIndicators.has(Number(item.id))){
+            wrapper.classList.add('communion-final-indicator');
+          }
+          if (DATA.rule?.communionTraditionalEdition && item.communionTraditionalHeading) {
+            wrapper.classList.add('communion-traditional-heading');
+          }
+          if (DATA.rule?.communionTraditionalEdition) {
+            if (item.communionTraditionalTroparionSet) wrapper.classList.add('communion-trad-joined');
+            if (item.communionTraditionalPenitentialTroparion) wrapper.classList.add('communion-trad-penitential');
+            if (item.communionTraditionalToneEight) wrapper.classList.add('communion-trad-tone8');
+            if (item.communionTraditionalInternalPrayerBoundary) wrapper.classList.add('communion-trad-internal-prayers');
+            if (item.communionTraditionalRubric === 'Придите поклонимся') wrapper.classList.add('communion-trad-three-worship');
+            if (item.communionTraditionalDoxology) wrapper.classList.add('communion-trad-glory');
+            if (item.communionTraditionalRefrain) wrapper.classList.add('communion-trad-refrain');
+            if (item.communionTraditionalNote) wrapper.classList.add('communion-trad-note');
+          }
+          if (DATA.rule?.communionTraditionalEdition &&
+              item.communionTraditionalTroparionBoundary) {
+            wrapper.classList.add('communion-trad-end');
+          }
           if (paschalOpeningItemIds.has(Number(item.id))) {
             wrapper.classList.add('paschal-hymn-opening');
           }
@@ -3025,9 +3547,14 @@ const HTML_TEMPLATE = String.raw`
                 localizedTitle
               );
 
+            const communionRussianRubric =
+              DATA.communionKind === 'preparation'
+                ? (DATA.communionRussianRubricByItem?.[String(item.id)] || '')
+                : '';
             // The Communion service's Russian text needs the same rubric
             // labels as CS, but without duplicating labels already present.
             const inlineLabel =
+              (viewMode === 'russian' ? communionRussianRubric : '') ||
               getRuleInlineLabel(
                 isCommunionReadingRule
                   ? {
@@ -3096,6 +3623,8 @@ const HTML_TEMPLATE = String.raw`
                     ? (traditionalText || 'Те́кстъ въ традиціо́нномъ начерта́ніи отсꙋ́тствꙋетъ.')
                     : churchText;
 
+            if(isCommunionPreparation && primaryLanguage==='russian' && !russianText.trim())
+              return;
             const itemTitle =
               displayTitle ||
               localizedDescription ||
@@ -3180,8 +3709,8 @@ const HTML_TEMPLATE = String.raw`
                   el(
                     'button',
                     wholeSaved
-                      ? 'favorite-action active'
-                      : 'favorite-action'
+                      ? 'favorite-action active prayer-action-menu-save'
+                      : 'favorite-action prayer-action-menu-save'
                   );
 
                 favorite.type =
@@ -3204,9 +3733,19 @@ const HTML_TEMPLATE = String.raw`
                       )
                     : '';
 
-                header.appendChild(
-                  favorite
-                );
+                const trigger=el('button','prayer-actions-trigger');
+                trigger.type='button';
+                trigger.dataset.itemId=String(item.id);
+                trigger.textContent='⋮';
+                trigger.title='Действия с молитвой';
+                trigger.setAttribute('aria-label',trigger.title);
+                const menu=el('div','prayer-actions-menu');
+                menu.dataset.itemId=String(item.id);
+                menu.appendChild(favorite);
+                menu.appendChild(makePrayerShareButton(item.id));
+                header.classList.add('has-prayer-share');
+                header.appendChild(trigger);
+                header.appendChild(menu);
               }
 
               wrapper.appendChild(
@@ -3234,6 +3773,18 @@ const HTML_TEMPLATE = String.raw`
               );
             }
 
+            // Source rubric is metadata; render it on the SAME line as
+            // its selectable hymn without changing prayer text or offsets.
+            const communionTraditionalInlineRubric =
+              DATA.rule?.communionTraditionalEdition
+                ? ({
+                    'Ирмос': 'И҆рмо́съ',
+                    'Припев': 'Припѣ́въ',
+                    'Богородичен': 'Богоро́диченъ',
+                    'Троичен': 'Тро́иченъ',
+                    'Кондак, глас 2': 'Конда́къ',
+                  }[String(item.communionTraditionalRubric || '')] || '')
+                : '';
             const textElement =
               el(
                 'div',
@@ -3243,12 +3794,22 @@ const HTML_TEMPLATE = String.raw`
                   : 'reader-text'
               );
 
+            if (DATA.communionKind === 'preparation' &&
+                primaryLanguage === 'russian' && /\n/u.test(russianText)) {
+              textElement.classList.add('communion-russian-linebreaks');
+            }
             textElement.dataset.itemId =
               String(
                 item.id
               );
 
-            if (
+            if (communionTraditionalInlineRubric) {
+              const inline = el('div', 'reader-inline communion-trad-inline');
+              inline.appendChild(el('span', 'reader-inline-label communion-trad-rubric-name',
+                communionTraditionalInlineRubric + ':'));
+              inline.appendChild(textElement);
+              wrapper.appendChild(inline);
+            } else if (
               inlineLabel &&
               (
                 primaryLanguage === 'church' ||
@@ -3282,13 +3843,24 @@ const HTML_TEMPLATE = String.raw`
               );
             }
 
-            if (DATA.viewMode === 'both') {
+            if (DATA.viewMode === 'both' &&
+                (!isCommunionPreparation || !!russianText.trim())) {
               const translationElement =
                 el(
                   'div',
                   'translation-text',
                   russianText || 'Перевод пока отсутствует.'
                 );
+              if (DATA.communionKind === 'preparation' && /\n/u.test(russianText)) {
+                translationElement.classList.add('communion-russian-linebreaks');
+              }
+              if (DATA.communionKind === 'preparation' &&
+                  communionRussianRubric && russianText.trim()) {
+                translationElement.insertBefore(
+                  el('span','communion-ru-rubric',communionRussianRubric),
+                  translationElement.firstChild
+                );
+              }
               const isEveningKondakParallel =
                 isEveningRule &&
                 Number(text.id) === 144 &&
@@ -3516,6 +4088,11 @@ const HTML_TEMPLATE = String.raw`
             }
           }
 
+          if(DATA.communionKind === 'preparation'){
+            formatCommunionLongTitle(
+              wrapper.querySelector('h2.section-title, .section-header h2.prayer-title')
+            );
+          }
           reader.appendChild(
             wrapper
           );
@@ -5665,6 +6242,7 @@ const HTML_TEMPLATE = String.raw`
         saveButton.disabled =
           count <= 0 ||
           state.savePending;
+        shareButton.disabled = count <= 0 || state.savePending;
       };
 
 
@@ -6348,14 +6926,39 @@ const HTML_TEMPLATE = String.raw`
     reader.addEventListener(
       'click',
       event => {
+        const actionsTrigger=event.target.closest('.prayer-actions-trigger');
+        if(actionsTrigger){
+          event.preventDefault();
+          event.stopPropagation();
+          const menu=actionsTrigger.parentElement.querySelector('.prayer-actions-menu');
+          const opening=!menu?.classList.contains('is-open');
+          document.querySelectorAll('.prayer-actions-menu.is-open').forEach(node=>
+            node.classList.remove('is-open'));
+          if(opening)menu?.classList.add('is-open');
+          return;
+        }
+        const prayerShare=event.target.closest('.prayer-share-action');
+        if(prayerShare){
+          prayerShare.closest('.prayer-actions-menu')?.classList.remove('is-open');
+          event.preventDefault();
+          event.stopPropagation();
+          const itemId=Number(prayerShare.dataset.itemId);
+          post({type:'share-prayer',itemId,
+            itemTitle:itemTitleMap.get(itemId)||DATA.rule.name||'Молитва',
+            text:itemTextMap.get(itemId)||''});
+          return;
+        }
         const favorite =
           event.target.closest(
             '.favorite-action'
           );
 
         if (!favorite) {
+          document.querySelectorAll('.prayer-actions-menu.is-open').forEach(node=>
+            node.classList.remove('is-open'));
           return;
         }
+        favorite.closest('.prayer-actions-menu')?.classList.remove('is-open');
 
         event.preventDefault();
         event.stopPropagation();
@@ -6602,6 +7205,17 @@ const HTML_TEMPLATE = String.raw`
       }
     );
 
+
+    shareButton.addEventListener('click', event => {
+      event.preventDefault();
+      event.stopPropagation();
+      if(!state.active || state.savePending)return;
+      const selected = (itemTextMap.get(state.active.itemId)||'')
+        .slice(state.active.start,state.active.end).trim();
+      if(!selected)return;
+      post({type:'share-selection',text:selected,itemId:state.active.itemId,
+        itemTitle:itemTitleMap.get(state.active.itemId)||'Молитва'});
+    });
 
     saveButton.addEventListener(
       'click',
@@ -7830,9 +8444,10 @@ const buildHtml = ({
   ponomarFontDataUri,
 }) => {
   const communionKind = getCommunionRuleKind(rule);
+  const traditionalReadingRule = completeCommunionTraditionalRule(rule, viewMode);
   const communionJoinedTroparionIds = [];
   if (communionKind === 'preparation') {
-    const items = rule?.items || [];
+    const items = traditionalReadingRule?.items || [];
     for (let i = 0; i + 1 < items.length; i += 1) {
       const first = items[i];
       const second = items[i + 1];
@@ -7842,6 +8457,21 @@ const buildHtml = ({
       }
     }
   }
+  const communionRussianRubricByItem = {};
+  if (communionKind === 'preparation') {
+    for (const item of rule?.items || []) {
+      if (item?.item_type !== 'text' || !item.text) continue;
+      const rubric=getCommunionRussianRubric(item.text.content, item.text.translation);
+      if (rubric) communionRussianRubricByItem[String(item.id)] = rubric;
+    }
+  }
+  const assertTraditionalBoundary = (metadata, offset) => {
+    if (!metadata || !Array.isArray(metadata.separatorBefore) || !Number.isInteger(offset)) {
+      throw Error('Missing Communion divider metadata');
+    }
+    if (!metadata.separatorBefore.includes(offset)) metadata.separatorBefore.push(offset);
+    metadata.separatorBefore.sort((a,b)=>a-b);
+  };
   const communionTypographyByItem = {};
   if (communionKind) {
     // Communion preparation stores prayer headings as separate section
@@ -7849,7 +8479,7 @@ const buildHtml = ({
     // rather than relying only on the text item's own (often empty) title.
     // No prayer content is rewritten; selection offsets remain unchanged.
     let followingTextIsPrayer = false;
-    for (const item of rule?.items || []) {
+    for (const item of traditionalReadingRule?.items || []) {
       if (item?.item_type === 'section') {
         followingTextIsPrayer = isCommunionPrayerHeading(item.title || item.content);
         continue;
@@ -7874,15 +8504,41 @@ const buildHtml = ({
           ...buildCommunionTypography(value, {continuousPrayer, communionKind}),
           continuousPrayer,
         };
+        if (traditionalReadingRule?.communionTraditionalEdition && viewMode === 'traditional') {
+          communionTypographyByItem[String(item.id)].ranges.push(...getCommunionTraditionalCountRanges(value));
+        }
+        // Insert a divider after "Усладил мя еси..." and before
+        // "Во светлостех...". Both prayers share one stable Text id.
+        if (traditionalReadingRule?.communionTraditionalEdition &&
+            item.communionTraditionalInternalPrayerBoundary) {
+          const full=String(value||"");
+          const position=full.indexOf('\nВо све́тлостех');
+          if (position<0 || !/Твоя́\.\s*$/u.test(full.slice(0,position))) {
+            throw Error('Traditional Communion final pair mismatch');
+          }
+          const metadata=communionTypographyByItem[String(item.id)];
+          assertTraditionalBoundary(metadata, position+1);
+        }
+        if (traditionalReadingRule?.communionTraditionalEdition &&
+            item.communionTraditionalMultiVerseInitials) {
+          // Each line after the first is another troparion; mark its
+          // first letter without inserting line breaks or altering the text.
+          for (const hit of String(value).matchAll(/\n[ \t]*(\p{L})/gu)) {
+            const at=hit.index+hit[0].lastIndexOf(hit[1]);
+            let end=at+hit[1].length;
+            while (end<value.length && /\p{M}/u.test(value[end])) end++;
+            communionTypographyByItem[String(item.id)].ranges.push({start:at,end,kind:'initial'});
+          }
+        }
       }
     }
   }
   // Only non-selectable captions and secondary translations are shortened
   // in the HTML data. Selectable texts are kept verbatim and folded by CSS.
-  const displayRule = communionKind && rule
+  const displayRule = communionKind && traditionalReadingRule
     ? {
-        ...rule,
-        items: (rule.items || []).map(item => {
+        ...traditionalReadingRule,
+        items: (traditionalReadingRule.items || []).map(item => {
           if (item?.item_type === 'instruction' || item?.item_type === 'section') {
             return {
               ...item,
@@ -7902,12 +8558,13 @@ const buildHtml = ({
           return item;
         }),
       }
-    : rule;
+    : traditionalReadingRule;
   const payload = {
     rule: displayRule,
     communionKind,
     communionTypographyByItem,
     communionJoinedTroparionIds,
+    communionRussianRubricByItem,
 
     viewMode: viewMode || 'both',
 
@@ -7944,13 +8601,14 @@ const buildHtml = ({
 
   return HTML_TEMPLATE.replace(
     '__PONOMAR_FONT_URL__',
-    String(ponomarFontDataUri || '').replace(/"/g, '%22')
+    String(viewMode === 'traditional' ? ponomarFontDataUri || '' : '').replace(/"/g, '%22')
   )
     .replace('__READER_TOP_PADDING__', String(Math.max(16, Number(topContentInset || 0) + 16)))
     .replace('__READER_PAYLOAD__', scriptSafeJson(payload));
 };
 
 const PrayerRuleReader = forwardRef(function PrayerRuleReader({
+  initialAppearance = null,
   rule,
   savedItems,
   savedProgress,
@@ -7978,7 +8636,11 @@ const PrayerRuleReader = forwardRef(function PrayerRuleReader({
   }, []);
 
   const webViewRef = useRef(null);
-  const appearanceRef = useRef(null);
+  // The screen may finish loading the scoped theme before the WebView exists.
+  // Seed the ref so onLoadEnd never falls back to an old global palette.
+  const appearanceRef = useRef(initialAppearance);
+  const initialAppearanceRef = useRef(initialAppearance);
+  if (initialAppearance) initialAppearanceRef.current = initialAppearance;
   const progressSourceRef = useRef(null);
   const sessionProgressRef = useRef(null);
   const [ponomarFontDataUri, setPonomarFontDataUri] = useState(getCachedPonomarFontDataUri());
@@ -8033,7 +8695,10 @@ const PrayerRuleReader = forwardRef(function PrayerRuleReader({
     [language, t]
   );
 
-  const readerBg = scopedBackground || (readingSettings.palette === 'custom' ? readingSettings.customBackground : ({night:'#29231F',warm:'#DEBE94',ivory:'#FFFDF3'}[readingSettings.palette] || '#FFF4DE'));
+  const readerBg = scopedBackground || (initialAppearance
+    ? resolveReaderAppearance(initialAppearance).background
+    : (readingSettings.palette === 'custom' ? readingSettings.customBackground
+      : ({night:'#29231F',warm:'#DEBE94',ivory:'#FFFDF3'}[readingSettings.palette] || '#FFF4DE')));
   const html = useMemo(
     () => {
       const markup = buildHtml({
@@ -8055,10 +8720,17 @@ const PrayerRuleReader = forwardRef(function PrayerRuleReader({
         ivory: ['#FFFDF3', '#F5EFE0', '#352D26'],
         night: ['#29231F', '#413831', '#F4E7D2'],
       };
-      const [bg, surface, fg] = readingSettings.palette === 'custom'
-        ? [readingSettings.customBackground, readingSettings.customBackground, readingSettings.customText]
-        : (palettes[readingSettings.palette] || palettes.parchment);
-      const size = Math.max(14, Math.min(28, Number(readingSettings.fontSize) || 17));
+      // Initial page colours come from the document's own saved override.
+      // Keep this out of useMemo dependencies: dragging a colour picker should
+      // apply the new theme live, not reload the whole prayer rule.
+      const scoped = initialAppearanceRef.current
+        ? resolveReaderAppearance(initialAppearanceRef.current) : null;
+      const [bg, surface, fg] = scoped
+        ? [scoped.background, scoped.surface, scoped.text]
+        : (readingSettings.palette === 'custom'
+          ? [readingSettings.customBackground, readingSettings.customBackground, readingSettings.customText]
+          : (palettes[readingSettings.palette] || palettes.parchment));
+      const size = Math.max(14, Math.min(28, Number(scoped?.fontSize || readingSettings.fontSize) || 17));
       const traditionalSize = Math.min(30, size + 2);
       const css = `:root {--background:${bg}; --surface:${surface}; --text:${fg}; --reading-font-size:${size}px; --traditional-reading-font-size:${traditionalSize}px;}
         .reader-text {font-size:var(--reading-font-size) !important;line-height:1.7 !important;}
@@ -8172,6 +8844,17 @@ const PrayerRuleReader = forwardRef(function PrayerRuleReader({
     if (message.type === 'memorial-open') {
       onMemorialOpen?.(message.context || null);
 
+      return;
+    }
+
+    if (message.type === 'share-prayer') {
+      if(String(message.text||'').trim()){
+        await shareContent({
+          title:message.itemTitle||rule.name||'Молитва',
+          text:message.text,
+          screen:'PrayerRule',params:{slug:rule.slug,anchorId:message.itemId},
+        });
+      }
       return;
     }
 
@@ -8298,6 +8981,16 @@ const PrayerRuleReader = forwardRef(function PrayerRuleReader({
       return;
     }
 
+    if(message.type === 'share-selection'){
+      if(String(message.text||'').trim()){
+        await shareContent({
+          title:message.itemTitle||rule.name||'Молитва',
+          text:message.text,
+          screen:'PrayerRule',params:{slug:rule.slug,anchorId:message.itemId},
+        });
+      }
+      return;
+    }
     if (message.type !== 'save-selection') {
       return;
     }

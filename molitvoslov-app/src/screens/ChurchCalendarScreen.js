@@ -14,6 +14,7 @@ import {LinearGradient} from 'expo-linear-gradient';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import NetInfo from '@react-native-community/netinfo';
 import {useFocusEffect} from '@react-navigation/native';
+import {useCalendarTodayRollover, shouldAdvanceSelectedDay} from '../hooks/useCalendarTodayRollover';
 
 import {AppBackground} from '../components/layout/AppBackground';
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
@@ -32,7 +33,9 @@ import {
   toCalendarDate,
 } from '../services/churchCalendar';
 import {CALENDAR_MONTHS, calendarText} from '../services/calendarPreferences';
+import {displayCalendarNumber, displayCalendarDateText} from '../services/calendarDisplayNumerals';
 import {useLanguage} from '../context/LanguageContext';
+import {translate} from '../i18n/translations';
 import {getCalendarDataLanguage} from '../services/languagePreferences';
 import {
   getBundledCalendarMonth,
@@ -43,6 +46,7 @@ import {getBundledCalendarIconSource} from '../data/calendarIconAssets';
 import {colors} from '../theme';
 import {CalendarSaveWholeButton, CalendarSelectableBody, makeCalendarSaveContext} from '../components/reader/CalendarSaveText';
 import {getCalendarBibleTranslation} from '../services/bibleTranslationPreference';
+import {shareContent} from '../services/contentSharing';
 import {bibleUiText, formatBibleNumber, isTraditionalBible, traditionalBibleTextStyle} from '../services/bibleUi';
 
 const buildCells = (year, month) => {
@@ -163,6 +167,7 @@ const SoftChevron = ({expanded}) => (
 );
 
 const displayTitle = (feast, copy) => feast?.title || feast?.short_title || copy.saintMemory;
+const displayCompactTitle = (feast, copy) => feast?.short_title || displayTitle(feast, copy);
 
 const formatCalendarDateLabel = (value, locale) => {
   if (!value) return '';
@@ -274,8 +279,11 @@ const FormattedCalendarText = ({text}) => {
 };
 
 const ExpandableTextBlock = ({title, subtitle, text, life = false, feast, date, section, sourceTitle}) => {
+  const {language} = useLanguage();
+  const cslFont=language==='csl_traditional'?{fontFamily:'Ponomar',fontWeight:'400'}:null;
   const [expanded, setExpanded] = useState(false);
   const [wholeSaved, setWholeSaved] = useState(false);
+  const actionsRef = useRef(null);
   const {height: windowHeight} = useWindowDimensions();
   const readerHeight = Math.min(420, windowHeight * 0.78);
   const [lifeOverflows, setLifeOverflows] = useState(false);
@@ -292,17 +300,31 @@ const ExpandableTextBlock = ({title, subtitle, text, life = false, feast, date, 
       <View style={styles.textBlockHeaderRow}>
         <Pressable
           onPress={() => setExpanded((value) => !value)}
+          onLongPress={() => actionsRef.current?.openMenu()}
+          delayLongPress={340}
           accessibilityRole="button"
           accessibilityState={{expanded}}
           style={({pressed}) => [styles.textBlockHeader, styles.textBlockHeaderTap, pressed && styles.pressed]}
         >
         <View style={styles.textBlockHeaderText}>
-          <Text style={styles.textBlockTitle}>{title}</Text>
+          <Text style={[styles.textBlockTitle,cslFont]}>{title}</Text>
           {!!subtitle && <Text style={styles.textBlockSubtitle}>{subtitle}</Text>}
         </View>
         <SoftChevron expanded={expanded} />
         </Pressable>
-        <CalendarSaveWholeButton text={text} saveContext={saveContext} onSavedChange={setWholeSaved} />
+        <CalendarSaveWholeButton
+          ref={actionsRef}
+          text={text}
+          saveContext={saveContext}
+          menuVariant
+          onSavedChange={setWholeSaved}
+          onShare={() => shareContent({
+            title: (sourceTitle || 'Церковный календарь') + ' — ' + title,
+            text: normalizeCalendarText(text),
+            screen: 'SaintDetail',
+            params: {date, focusSection: section, feastUid: feast?.sync_uid || feast?.id},
+          })}
+        />
       </View>
 
       {expanded && (life ? (
@@ -351,11 +373,12 @@ const ExpandableTextBlock = ({title, subtitle, text, life = false, feast, date, 
 };
 
 const CALENDAR_BIBLE_TRANSLATIONS = [
-  {code: 'rst', label: 'RU', accessibilityLabel: 'Русский Синодальный перевод'},
-  {code: 'csl_traditional', label: 'ЦС', accessibilityLabel: 'Церковнославянский текст'},
+  {code: 'rst', label: 'RU'},
+  {code: 'csl_traditional', label: 'ЦС'},
 ];
 
 const ReadingLink = ({kind, title, label, sequence, navigation, copy, language, translationCode = 'rst', onLayout, initiallyExpanded = false}) => {
+  const cslFont=language==='csl_traditional'?{fontFamily:'Ponomar',fontWeight:'400'}:null;
   const [expanded, setExpanded] = useState(initiallyExpanded);
   // Local to this reading: switching a translation does not change
   // the default in Account or another opened calendar reading.
@@ -392,11 +415,11 @@ const ReadingLink = ({kind, title, label, sequence, navigation, copy, language, 
         </View>
 
         <View style={styles.readingTextWrap}>
-          <Text style={styles.readingKind}>
+          <Text style={[styles.readingKind,cslFont]}>
             {kind === 'gospel'
               ? copy.gospel
               : kind === 'old_testament'
-                ? 'Ветхий Завет'
+                ? translate(language,'calendarUi.oldTestament')
                 : copy.apostle}
             {!!sequence && ` · ${sequence}`}
           </Text>
@@ -404,9 +427,9 @@ const ReadingLink = ({kind, title, label, sequence, navigation, copy, language, 
           <Text style={styles.readingTitle}>{title}</Text>
 
           {target ? (
-            <Text style={styles.readingHint}>{copy.openBible}</Text>
+            <Text style={[styles.readingHint,cslFont]}>{copy.openBible}</Text>
           ) : (
-            <Text style={styles.readingHintMuted}>{copy.unrecognized}</Text>
+            <Text style={[styles.readingHintMuted,cslFont]}>{copy.unrecognized}</Text>
           )}
         </View>
 
@@ -422,7 +445,7 @@ const ReadingLink = ({kind, title, label, sequence, navigation, copy, language, 
               onPress={() => setExpanded((value) => !value)}
               style={({pressed}) => [styles.readingExpand, pressed && styles.pressed]}
             >
-              <Text style={styles.readingExpandText}>{expanded ? copy.hideText : copy.readText}</Text>
+              <Text style={[styles.readingExpandText,cslFont]}>{expanded ? copy.hideText : copy.readText}</Text>
             </Pressable>
 
             {expanded && (
@@ -431,7 +454,7 @@ const ReadingLink = ({kind, title, label, sequence, navigation, copy, language, 
                   <Pressable
                     key={option.code}
                     accessibilityRole="button"
-                    accessibilityLabel={option.accessibilityLabel}
+                    accessibilityLabel={translate(language,'calendarUi.'+(option.code==='rst'?'rst':'church'))}
                     accessibilityState={{selected: activeTranslationCode === option.code}}
                     onPress={() => setActiveTranslationCode(option.code)}
                     style={({pressed}) => [
@@ -504,6 +527,7 @@ const ReadingLink = ({kind, title, label, sequence, navigation, copy, language, 
 };
 
 const ReadingGroup = ({kind, readings, navigation, copy, language, translationCode = 'rst', onLayout, expandFirst = false}) => {
+  const cslFont=language==='csl_traditional'?{fontFamily:'Ponomar',fontWeight:'400'}:null;
   const [showAll, setShowAll] = useState(false);
 
   if (!readings.length) {
@@ -535,7 +559,7 @@ const ReadingGroup = ({kind, readings, navigation, copy, language, translationCo
           onPress={() => setShowAll((value) => !value)}
           style={({pressed}) => [styles.readingMore, pressed && styles.pressed]}
         >
-          <Text style={styles.readingMoreText}>
+          <Text style={[styles.readingMoreText,cslFont]}>
             {showAll
               ? copy.hideExtraReadings
               : copy.moreReadings.replace('{count}', String(hiddenCount))}
@@ -549,6 +573,7 @@ const ReadingGroup = ({kind, readings, navigation, copy, language, translationCo
 
 export const ChurchCalendarScreen = ({route, navigation}) => {
   const {language} = useLanguage();
+  const cslFont=language==='csl_traditional'?{fontFamily:'Ponomar',fontWeight:'400'}:null;
   const [calendarBibleTranslationCode, setCalendarBibleTranslationCode] = useState('rst');
   useFocusEffect(React.useCallback(() => {
     let active = true;
@@ -591,6 +616,22 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
   const [visibleYear, setVisibleYear] = useState(initial.getFullYear());
   const [visibleMonth, setVisibleMonth] = useState(initial.getMonth() + 1);
   const [selectedDate, setSelectedDate] = useState(toCalendarDate(initial));
+  const selectedDateRef = useRef(selectedDate);
+  selectedDateRef.current = selectedDate;
+
+  const calendarTodayKey = useCalendarTodayRollover((previousToday, currentToday) => {
+    // Only advance if this screen was actually displaying the old today.
+    // Historical dates selected manually or opened via a shared link stay put.
+    if (!shouldAdvanceSelectedDay(selectedDateRef.current, previousToday)) return;
+    selectedDateRef.current = currentToday;
+    setSelectedDate(currentToday);
+    if (visibleYear + '-' + String(visibleMonth).padStart(2, '0') ===
+        previousToday.slice(0, 7)) {
+      const [year, month] = currentToday.split('-').map(Number);
+      setVisibleYear(year);
+      setVisibleMonth(month);
+    }
+  });
   const [monthData, setMonthData] = useState(null);
   const [dayData, setDayData] = useState(null);
   const [loadingMonth, setLoadingMonth] = useState(true);
@@ -665,23 +706,7 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
     return () => clearTimeout(timer);
   }, [dayData, headerHeight, navigation, readingLayoutVersion, route.params?.section]);
 
-  useEffect(() => {
-    let previousOnline = null;
 
-    const unsubscribe = NetInfo.addEventListener((state) => {
-      const online = state.isConnected === true && state.isInternetReachable !== false;
-
-      if (online && previousOnline === false) {
-        setRefreshVersion((value) => value + 1);
-      }
-
-      if (state.isConnected !== null) {
-        previousOnline = online;
-      }
-    });
-
-    return unsubscribe;
-  }, []);
 
   useEffect(() => {
     const subscription = AppState.addEventListener('change', (nextState) => {
@@ -753,7 +778,7 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
 
   const cells = useMemo(() => buildCells(visibleYear, visibleMonth), [visibleMonth, visibleYear]);
 
-  const today = toCalendarDate(new Date());
+  const today = calendarTodayKey;
   const regularFeasts = (dayData?.all_feasts || []).filter((feast) => !isMovableDayCard(feast));
   const suggestedMain = dayData?.main_feast;
   const mainFeast =
@@ -781,7 +806,7 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
   const calendar = (
     <View style={styles.calendarCard}>
       <View style={styles.languageRow}>
-        <Text style={styles.calendarSectionTitle}>{copy.calendarTitle}</Text>
+        <Text style={[styles.calendarSectionTitle,cslFont]}>{copy.calendarTitle}</Text>
       </View>
 
       <View style={styles.calendarHeader}>
@@ -793,8 +818,8 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
           <Text style={styles.monthArrow}>‹</Text>
         </Pressable>
 
-        <Text style={styles.monthTitle}>
-          {locale.nominative[visibleMonth - 1]} {visibleYear}
+        <Text style={[styles.monthTitle,cslFont, language === 'csl_traditional' && styles.monthTitleTraditional]}>
+          {locale.nominative[visibleMonth - 1]} {displayCalendarNumber(visibleYear, language)}
         </Text>
 
         <Pressable
@@ -808,7 +833,7 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
 
       <View style={styles.weekRow}>
         {locale.miniWeekdays.map((weekday, index) => (
-          <Text key={weekday} style={[styles.weekday, index >= 5 && styles.weekendText]}>
+          <Text key={weekday} style={[styles.weekday, index >= 5 && styles.weekendText,cslFont]}>
             {weekday}
           </Text>
         ))}
@@ -854,9 +879,10 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
                       weekend && !cell.outside && styles.weekendText,
                       appearance && styles.dayNumberMarked,
                       isToday && styles.dayNumberToday,
+                      language === 'csl_traditional' && styles.dayNumberTraditional,
                     ]}
                   >
-                    {cell.day}
+                    {displayCalendarNumber(cell.day, language)}
                   </Text>
                 </View>
               </Pressable>
@@ -869,7 +895,7 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
 
   const feastList = (
     <View style={styles.otherSaintsCard}>
-      <Text style={styles.sectionEyebrow}>{copy.alsoToday}</Text>
+      <Text style={[styles.sectionEyebrow,cslFont]}>{copy.alsoToday}</Text>
 
       {otherFeasts.length ? (
         otherFeasts.map((feast) => (
@@ -883,13 +909,13 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
           >
             <View style={styles.otherSaintDot} />
 
-            <Text style={styles.otherSaintText}>{displayTitle(feast, copy)}</Text>
+            <Text style={styles.otherSaintText}>{displayCompactTitle(feast, copy)}</Text>
 
             <Text style={styles.otherSaintArrow}>›</Text>
           </Pressable>
         ))
       ) : (
-        <Text style={styles.otherSaintEmpty}>{copy.noOtherMemories}</Text>
+        <Text style={[styles.otherSaintEmpty,cslFont]}>{copy.noOtherMemories}</Text>
       )}
     </View>
   );
@@ -905,8 +931,8 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
         </View>
       ) : dayData ? (
         <>
-          <Text style={styles.dayDate}>
-            {formatCalendarDateLabel(dayData.date_gregorian, locale)}
+          <Text style={[styles.dayDate,cslFont]}>
+            {displayCalendarDateText(formatCalendarDateLabel(dayData.date_gregorian, locale), language)}
           </Text>
           {!!liturgicalDayLabel && (
             <Text style={styles.liturgicalDayLabel}>{liturgicalDayLabel}</Text>
@@ -926,18 +952,18 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
             </View>
 
             <View style={styles.feastHeroText}>
-              <Text style={styles.feastMemory}>{copy.feastMemory}</Text>
+              <Text style={[styles.feastMemory,cslFont]}>{copy.feastMemory}</Text>
               <Text style={styles.feastTitle}>{displayTitle(mainFeast, copy)}</Text>
 
               {!!formatMemorialDay(dayData, language) && (
                 <View style={styles.fastBadge}>
-                  <Text style={styles.fastBadgeText}>{formatMemorialDay(dayData, language)}</Text>
+                  <Text style={[styles.fastBadgeText,cslFont]}>{formatMemorialDay(dayData, language)}</Text>
                 </View>
               )}
 
               {!!formatFast(dayData, language) && (
                 <View style={styles.fastBadge}>
-                  <Text style={styles.fastBadgeText}>{formatFast(dayData, language)}</Text>
+                  <Text style={[styles.fastBadgeText,cslFont]}>{formatFast(dayData, language)}</Text>
                 </View>
               )}
             </View>
@@ -992,7 +1018,7 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
             style={styles.readingsSection}
             onLayout={(event) => saveReadingLayout('readings', event.nativeEvent.layout.y)}
           >
-            <Text style={styles.sectionEyebrow}>{copy.readings}</Text>
+            <Text style={[styles.sectionEyebrow,cslFont]}>{copy.readings}</Text>
 
             <ReadingGroup
               kind="gospel"
@@ -1026,7 +1052,7 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
             />
 
             {!gospelReadings.length && !apostleReadings.length && !oldTestamentReadings.length && (
-              <Text style={styles.noReadings}>{copy.noReadings}</Text>
+              <Text style={[styles.noReadings,cslFont]}>{copy.noReadings}</Text>
             )}
           </View>
         </>
@@ -1076,6 +1102,7 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
 
       <FixedSectionHeader onHeaderHeightChange={setHeaderHeight}
         title={copy.calendarTitle}
+        titleTextStyle={cslFont}
         navigation={navigation}
         topInset={insets.top}
       />
@@ -1144,6 +1171,10 @@ const styles = StyleSheet.create({
     fontSize: 19,
     fontWeight: '700',
   },
+  monthTitleTraditional: {
+    fontSize: 17, lineHeight: 28, fontWeight: '400',
+    includeFontPadding: false,
+  },
   weekRow: {
     flexDirection: 'row',
     paddingVertical: 4,
@@ -1198,6 +1229,10 @@ const styles = StyleSheet.create({
   dayNumber: {
     color: '#493225',
     fontSize: 13,
+  },
+  dayNumberTraditional: {
+    fontFamily: 'Ponomar', fontSize: 13, lineHeight: 19,
+    includeFontPadding: false,
   },
   dayNumberToday: {
     color: '#FFFFFF',

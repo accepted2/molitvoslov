@@ -63,6 +63,51 @@ export const buildCanonTypography = (value, inlineLabel = '', sectionHeading = '
   const breakBefore = new Set();
   const initials = [];
 
+  // CANON_PARALLEL_RU_BREAKS_NO_REFRAIN_LABEL_20261117
+  // In CS+RU, preserve the Russian column's subdued appearance. Insert only
+  // visual line breaks after complete doxologies, not red initials or cues.
+  // Suppress an author-supplied "Припев:" prefix visually without rewriting
+  // the text used by selection, search, bookmarks or share links.
+  if (options.parallelTranslation === true) {
+    const mapped = normalizeWithOffsets(text);
+    const breaks = new Set();
+    const hidden = [];
+    if (sectionType !== 'prayer') {
+      const doxologies = [
+        /слава\s+(?:отцу|оцу),?\s+и\s+(?:сыну|сну),?\s+и\s+(?:святому|стому)\s+(?:духу|дху)[ \t]*[.:;!?]?/giu,
+        /(?:и\s+)?ныне,?\s+и\s+(?:присно|всегда),?\s+(?:и\s+)?во\s*веки\s+веков[ъ]?[ \t]*[.,;:]?[ \t]*амин[ьъ]?[ \t]*[.!?]?/giu,
+      ];
+      for (const pattern of doxologies) {
+        for (const match of mapped.normalized.matchAll(pattern)) {
+          const lastOffset = mapped.offsets[match.index + match[0].length - 1];
+          if (!Number.isInteger(lastOffset)) continue;
+          // markAfter adds a BR position; use a throwaway initials list.
+          markAfter(text, extendCombiningMarks(text, lastOffset + 1), breaks, []);
+        }
+      }
+    }
+    if (sectionType === 'refrain') {
+      const rubric = /^\s*(?:\[\s*припев\s*\]|припев\s*[:.])\s*/iu.exec(mapped.normalized);
+      if (rubric && rubric[0].length && rubric[0].length < mapped.normalized.length) {
+        const start = mapped.offsets[0];
+        const lastOffset = mapped.offsets[rubric[0].length - 1];
+        if (Number.isInteger(start) && Number.isInteger(lastOffset)) {
+          hidden.push({
+            start,
+            end: extendCombiningMarks(text, lastOffset + 1),
+            kind: 'parallel-refrain-label',
+          });
+        }
+      }
+    }
+    return {
+      ranges: hidden,
+      breakBefore: [...breaks].sort((a,b) => a-b),
+      standaloneInlineLabel: false,
+      prayerProse: sectionType === 'prayer',
+    };
+  }
+
   // Keep the established short headings (including "Ирмос:", "Припев:",
   // "Иисусу:" and "Слава:") while separating only long introductory cues.
   // "Молитва:" was already rendered on its own line in the canon reader.
@@ -134,7 +179,8 @@ export const buildCanonTypography = (value, inlineLabel = '', sectionHeading = '
   const {normalized, offsets} = normalizeWithOffsets(text);
   const doxologies = [
     /слава\s+(?:отцу|оцу),?\s+и\s+(?:сыну|сну),?\s+и\s+(?:святому|стому)\s+(?:духу|дху)[ \t]*[.:;!?]?/giu,
-    /(?:и\s+)?ныне,?\s+и\s+присно,?\s+(?:и\s+)?во\s*веки\s+веков[ъ]?[ \t]*[.,;:]?[ \t]*амин[ьъ]?[ \t]*[.!?]?/giu,
+    // CANON_RUSSIAN_NOW_GLORY_LINK_20261117: 'И ныне, и всегда' in Russian is one red doxology.
+    /(?:и\s+)?ныне,?\s+и\s+(?:присно|всегда),?\s+(?:и\s+)?во\s*веки\s+веков[ъ]?[ \t]*[.,;:]?[ \t]*амин[ьъ]?[ \t]*[.!?]?/giu,
   ];
 
   // A prayer can contain "и ныне ... во веки веков" as ordinary prose.

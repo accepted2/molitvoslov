@@ -2,8 +2,9 @@
 
 import React from 'react';
 import {FlexWidget, ImageWidget, OverlapWidget, TextWidget} from 'react-native-android-widget';
+import {fitText} from './widgetLayout';
 
-const QUOTE_BACKGROUND = require('../../assets/home/hero.png');
+const QUOTE_BACKGROUND = require('../../assets/home/hero_opt.webp');
 
 export const QuoteOfDayWidget = ({quote, width = 240, height = 100}) => {
   const text = quote?.text || '';
@@ -47,6 +48,15 @@ export const QuoteOfDayWidget = ({quote, width = 240, height = 100}) => {
 
   const sourceLineHeight = sourceFontSize + 3;
 
+  // Fit quote text inside the existing local layout without changing its design.
+  const quoteFit = fitText({
+    text: String(text || '').trim(),
+    maxWidth: Math.max(1, widgetWidth - 2 * horizontalPadding - 2),
+    maxHeight: Math.max(1, widgetHeight - 2 * verticalPadding -
+      (source ? sourceFontSize + 8 : 0)),
+    maxFont: quoteFontSize,
+    minFont: 11,
+  });
   return (
     <OverlapWidget
       clickAction="OPEN_APP"
@@ -89,7 +99,7 @@ export const QuoteOfDayWidget = ({quote, width = 240, height = 100}) => {
           style={{
             flex: 1,
             width: 'match_parent',
-            fontFamily: 'Ponomar-Regular',
+            fontFamily: 'sans-serif',
             justifyContent: 'center',
           }}
         >
@@ -99,9 +109,9 @@ export const QuoteOfDayWidget = ({quote, width = 240, height = 100}) => {
             style={{
               width: 'match_parent',
               color: '#F8E7C5',
-              fontFamily: 'Ponomar-Regular',
-              fontSize: quoteFontSize,
-              lineHeight: quoteLineHeight,
+              fontFamily: 'sans-serif',
+              fontSize: quoteFit.fontSize,
+              lineHeight: quoteFit.lineHeight,
               fontWeight: '500',
             }}
           />
@@ -114,7 +124,7 @@ export const QuoteOfDayWidget = ({quote, width = 240, height = 100}) => {
             style={{
               marginTop: 4,
               color: '#E5C58F',
-              fontFamily: 'Ponomar-Regular',
+              fontFamily: 'sans-serif',
               fontSize: sourceFontSize,
               lineHeight: sourceLineHeight,
 

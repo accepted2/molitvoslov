@@ -86,6 +86,19 @@ export const READER_STYLES = String.raw`
       font-weight: 400;
       font-variant-ligatures: common-ligatures;
     }
+    /* Closing prayers of the Three Combined Canons ONLY. */
+    .rule-item.three-combined-canon.three-combined-closing-prayer.three-combined-heading {
+      border-bottom: 0 !important; padding-bottom: 0 !important; margin-bottom: 4px;
+    }
+    .rule-item.three-combined-canon.three-combined-closing-prayer .section-header::after {
+      content: none !important; display: none !important;
+    }
+    /* Visual paragraphs collapse to prose; original selectable text is intact. */
+    .rule-item.three-combined-canon.three-combined-closing-prayer .paragraph-gap {
+      display: inline !important; width: auto !important; height: auto !important;
+      overflow: visible !important; font-size: inherit !important;
+      line-height: inherit !important; white-space: normal !important;
+    }
     /* The combined Three Canons' traditional UCS source has been
        converted to real Unicode Church Slavonic. Ponomar renders the
        letters, accents and titla without the original ASCII glyph codes.
@@ -351,6 +364,104 @@ export const READER_STYLES = String.raw`
     .section-action.active {
       color: var(--accent-dark);
     }
+    /* Psalms in a kathisma use one small three-dot menu on the left.
+       Other prayer sections retain their paired save/share controls. */
+    .psalter-kathisma-reader .document-header .rule-title {
+      padding-left:0;
+      padding-right:0;
+    }
+    .psalter-kathisma-reader .psalter-psalm-section .psalter-menu-header {
+      position:relative;
+      min-height:34px;
+      justify-content:center;
+    }
+    .psalter-kathisma-reader .psalter-psalm-section
+      .psalter-menu-header .prayer-title {
+      padding-left:42px;
+      padding-right:42px;
+    }
+    .psalter-kathisma-reader .psalter-psalm-section .psalter-psalm-menu {
+      position:absolute;
+      left:0;
+      right:auto;
+      top:50%;
+      transform:translateY(-50%);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      width:32px;
+      min-width:32px;
+      height:32px;
+      padding:0;
+      border-radius:16px;
+      border:1px solid var(--border);
+      background:rgba(241,223,194,.94);
+      /* Fixed dark glyph on the existing light control background. */
+      color:#4B301D;
+      font-family:Georgia,serif;
+      font-size:23px;
+      line-height:29px;
+      cursor:pointer;
+      touch-action:manipulation;
+    }
+    /* Consistent paired actions across akathists, canons, kathismas,
+       miscellaneous prayers and liturgical hours. No changes to text spans. */
+    .inline-share-action {
+      width: 34px;
+      height: 34px;
+      min-width: 34px;
+      min-height: 34px;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      border: 1px solid var(--border);
+      border-radius: 17px;
+      color: var(--secondary);
+      background: rgba(241,223,194,.94);
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+    .inline-share-action svg {pointer-events:none}
+    .document-header .document-share-action {
+      position:absolute;
+      top:50%;
+      right:0;
+      transform:translateY(-50%);
+    }
+    .document-header .rule-title {
+      padding-right:82px;
+    }
+    .document-header .document-action {
+      right:39px;
+    }
+    .psalter-kathisma-reader .document-header .document-action {
+      left:0;
+      right:auto;
+    }
+    .section-header .section-share-action {
+      flex:0 0 34px;
+    }
+    body:not(.book-mode) .section-header .section-share-action {
+      position:absolute;
+      top:50%;
+      right:0;
+      transform:translateY(-50%);
+    }
+    body:not(.book-mode) .section-header.has-share-action .section-action {
+      right:39px;
+    }
+    body:not(.book-mode) .psalter-kathisma-reader .section-header.has-share-action .section-action {
+      left:0;
+      right:auto;
+    }
+    body:not(.book-mode) .section-header.has-share-action .prayer-title {
+      padding-right:82px;
+    }
+    .rule-item.hours-section.hours-collapsible .hours-accordion {
+      position:relative;
+    }
+
     .save-heart-icon {
       display: block;
       width: 19px;
@@ -471,6 +582,22 @@ export const READER_STYLES = String.raw`
       color: var(--secondary);
       font-size: 16px;
       line-height: 23px;
+    }
+    /* MOLITVOSLOV_AKATHIST_VISIBLE_NEWLINES_V1
+       Keep source \n in every Akathist reader. The WebView creates a
+       separate BR only for responses not already starting after \n.
+       Important also for the inherited body.book-mode .reader-text rule.
+       No literal prayer text or saved selection offset is changed. */
+    .reader-text.akathist-church,
+    .reader-text.akathist-russian {
+      white-space: pre-line !important;
+    }
+    /* MOLITVOSLOV_AKATHIST_PRAYER_PROSE_KONTAKION1_V1
+       Prayers flow continuously; only actual hymn responses use pre-line. */
+    .reader-text.akathist-prose-prayer {
+      white-space: normal !important;
+      text-align: justify;
+      text-align-last: auto;
     }
     .reader-text.psalter {
     white-space: pre-line;
@@ -1337,7 +1464,7 @@ export const READER_STYLES = String.raw`
           transparent 92%,
           rgba(151, 98, 43, 0.050) 100%
         ),
-        #FBF0D9;
+        var(--book-paper,#FBF0D9);
       box-shadow: inset 0 0 24px rgba(110, 70, 30, 0.10);
     }
 
@@ -1379,16 +1506,25 @@ export const READER_STYLES = String.raw`
           rgba(0, 0, 0, 0.10) 95%,
           rgba(0, 0, 0, 0.30) 100%
         ),
-        #171310;
+        var(--book-paper,#171310);
       box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.30);
     }
 
+    /* A user-selected colour must be flat: no old parchment/brown texture
+       bleeding through on chapter switches or when changing the palette. */
+    body.book-mode.book-custom {
+      background: var(--book-paper, #FFF4DE);
+      box-shadow: none;
+    }
     body.book-mode.book-night::after {
       box-shadow:
         inset 12px 0 20px -15px rgba(0, 0, 0, 0.72),
         inset -12px 0 20px -15px rgba(0, 0, 0, 0.72),
         inset 0 10px 20px -17px rgba(0, 0, 0, 0.56),
         inset 0 -10px 20px -17px rgba(0, 0, 0, 0.56);
+    }
+    body.book-mode.book-custom::after {
+      box-shadow: none;
     }
 
     body.book-mode.book-night .bible-chapter-start .prayer-title {
@@ -1400,7 +1536,7 @@ export const READER_STYLES = String.raw`
     }
 
     body.book-mode.book-night .reader-text.bible-verse {
-      color: #E7D7C6;
+      color: var(--book-body-color,#E7D7C6);
     }
 
     body.book-mode.book-night .bible-drop-cap {
@@ -1615,7 +1751,7 @@ export const READER_STYLES = String.raw`
 
     }
     body.book-mode .reader-text.bible-verse {
-      color: #3C2A20;
+      color: var(--book-body-color,#3C2A20);
       font-family: Georgia, "Times New Roman", serif;
       font-size: var(--book-font-size);
       line-height: var(--book-line-height);
@@ -1842,7 +1978,7 @@ export const READER_STYLES = String.raw`
       position: fixed;
       left: 14px;
       right: 14px;
-      bottom: 22px;
+      bottom: calc(104px + env(safe-area-inset-bottom, 0px));
       z-index: 1002;
       min-height: 52px;
       padding: 7px 8px 7px 12px;
@@ -1886,8 +2022,20 @@ export const READER_STYLES = String.raw`
       font-size: 25px;
       line-height: 34px;
     }
+    #selection-share {
+      min-width: 70px;
+      height: 36px;
+      padding: 0 7px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: transparent;
+      color: var(--accent-dark);
+      font-size: 12px;
+      font-weight: 700;
+    }
+    #selection-share:disabled { opacity: .42; }
     #selection-save {
-      min-width: 96px;
+      min-width: 80px;
       height: 36px;
       padding: 0 14px;
       border: 0;
@@ -1902,6 +2050,772 @@ export const READER_STYLES = String.raw`
     }
     #selection-save:disabled {
       opacity: 0.4;
+    }
+
+    /* HOURS_READER_TYPOGRAPHY_V1 — only the new Hours reader.
+       Text is plain and selectable; headings and rubrics use source metadata.
+       Existing Psalter, prayer-rule, akathist and canon styles are unchanged. */
+    .rule-item.hours-section {
+      margin-bottom: 18px;
+      padding-bottom: 18px;
+      border-bottom: 1px solid var(--border);
+    }
+    .rule-item.hours-section:last-child {
+      border-bottom: 0;
+    }
+    body:not(.book-mode) .rule-item.hours-section .section-header {
+      margin: 8px 0 14px;
+      min-height: 28px;
+      justify-content: center;
+    }
+    body:not(.book-mode) .rule-item.hours-section .section-header .prayer-title {
+      color: var(--accent-dark);
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 19px;
+      line-height: 26px;
+      font-weight: 700;
+      text-align: center;
+      letter-spacing: 0;
+      margin: 0;
+      padding: 0 8px;
+    }
+    .rule-item.hours-section.hours-section-psalm .section-header .prayer-title {
+      color: var(--accent-dark);
+      font-size: 18px;
+      font-weight: 700;
+    }
+    /* Hours titles have no underline or trailing decorative rule. */
+    .rule-item.hours-section .section-header::after {
+      content: none !important;
+      display: none !important;
+    }
+    .rule-item.hours-section .section-header .prayer-title {
+      text-decoration: none !important;
+      border-bottom: 0 !important;
+      box-shadow: none !important;
+    }
+    .rule-item.hours-section.hours-section-conditional {
+      margin: 16px 0;
+      padding: 6px 0 14px 12px;
+      border-left: 2px solid var(--border);
+      border-bottom: 0;
+    }
+    .rule-item.hours-section.hours-section-conditional .section-header .prayer-title {
+      color: var(--secondary);
+      font-size: 16px;
+      line-height: 23px;
+      font-weight: 600;
+      text-align: left;
+    }
+    /* Subtle inline dropdowns for optional First Hour sequences.
+       Content remains in the native selectable document when expanded. */
+    .rule-item.hours-section.hours-collapsible {
+      margin: 11px 0 14px;
+      padding: 0;
+      border: 0;
+      background: transparent;
+    }
+    .rule-item.hours-section.hours-collapsible .hours-accordion {
+      margin: 0;
+      overflow: visible;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--surface);
+    }
+    .rule-item.hours-section.hours-collapsible .hours-accordion-toggle {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      min-height: 49px;
+      padding: 12px 14px;
+      color: var(--accent-dark);
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 16px;
+      line-height: 22px;
+      font-weight: 700;
+      list-style: none;
+      cursor: pointer;
+      -webkit-user-select: none;
+      user-select: none;
+      touch-action: manipulation;
+      white-space: normal;
+      overflow-wrap: break-word;
+      min-width: 0;
+    }
+    .rule-item.hours-section.hours-collapsible .hours-accordion-toggle::-webkit-details-marker {
+      display: none;
+    }
+    .rule-item.hours-section.hours-collapsible .hours-accordion-toggle::after {
+      content: "⌄";
+      flex: 0 0 auto;
+      color: var(--accent-dark);
+      font-size: 22px;
+      line-height: 18px;
+      font-weight: 400;
+      transform: rotate(0deg);
+      transition: transform 140ms ease;
+    }
+    .rule-item.hours-section.hours-collapsible .hours-accordion[open] > .hours-accordion-toggle::after {
+      transform: rotate(180deg);
+    }
+    .rule-item.hours-section.hours-collapsible .hours-accordion[open] > .hours-accordion-toggle {
+      border-bottom: 1px solid var(--border);
+    }
+    .rule-item.hours-section.hours-collapsible .hours-accordion-content {
+      padding: 12px 14px 14px;
+      background: transparent;
+    }
+    /* The text-filled Hours dropdown keeps full width. Only individual
+       prayer paragraphs have a three-dot menu and reserve a narrow left rail. */
+    .rule-item.hours-section .reader-row.hours-prayer-action-row {
+      position: relative;
+      padding-left: 38px;
+    }
+    .rule-item.hours-section .hours-prayer-action-row > .reader-action-container {
+      top: 0;
+      transform: none;
+      z-index: 60;
+    }
+    body:not(.book-mode) .rule-item.hours-section .hours-prayer-action-row .reader-action-menu .hours-row-save,
+    body:not(.book-mode) .rule-item.hours-section .hours-prayer-action-row .reader-action-menu .hours-row-share {
+      width: 100%;
+      min-height: 42px;
+      padding: 0 11px;
+      border: 0;
+      border-radius: 8px;
+      background: transparent;
+      color: #4B301D;
+      text-align: left;
+      font-size: 14px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      touch-action: manipulation;
+    }
+    .rule-item.hours-section .reader-text.hours-fallback-traditional {
+      font-family: 'Ponomar', Georgia, serif;
+      font-weight: 400;
+      font-synthesis: none;
+      font-variant-ligatures: common-ligatures;
+    }
+    .rule-item.hours-section.hours-section-instruction .reader-text.hours-text {
+      font-size: 14px;
+      line-height: 1.55;
+      color: var(--secondary);
+      text-align: left;
+      text-align-last: left;
+    }
+    .rule-item.hours-section.hours-section-postpsalm {
+      /* The final Psalm already has a bottom rule. Never double it. */
+      margin-top: 0;
+      border-top: 0;
+      padding-top: 0;
+    }
+    .rule-item.hours-section.hours-section-hymn .reader-text.hours-heading {
+      color: var(--accent-dark);
+    }
+    .rule-item.hours-section.hours-section-opening .reader-text {
+      text-align: left;
+      text-align-last: left;
+    }
+    .rule-item.hours-section.hours-section-rubric .reader-text.hours-rubric {
+      color: var(--accent-dark);
+      font-style: normal;
+    }
+    .rule-item.hours-section .reader-row {
+      margin-bottom: 11px;
+    }
+    .rule-item.hours-section .reader-row:last-child {
+      margin-bottom: 0;
+    }
+    .rule-item.hours-section .reader-text.hours-text {
+      color: var(--text);
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 17px;
+      line-height: 1.59;
+      font-style: normal;
+      font-weight: 400;
+      white-space: pre-line;
+      text-align: justify;
+      text-align-last: left;
+      text-justify: inter-word;
+      overflow-wrap: break-word;
+      word-break: normal;
+      -webkit-hyphens: auto;
+      hyphens: auto;
+    }
+    /* Full Russian Hours are a primary reading language too, not a
+       dimmed translation or web-page preview. */
+    .rule-item.hours-section .reader-text.hours-russian {
+      color: var(--text);
+      font-size: 17px;
+      line-height: 1.59;
+    }
+    /* Russian-only must be as dark, full-sized and justified as the ЦС tab.
+       Only the parallel translation uses a secondary shade. */
+    .rule-item.hours-section .reader-text.hours-russian-primary {
+      color: var(--text) !important;
+      font-size: 17px;
+      line-height: 1.59;
+      white-space: normal !important;
+      text-align: justify !important;
+      text-align-last: left !important;
+    }
+    .rule-item.hours-section .reader-text.hours-russian-parallel {
+      color: var(--secondary) !important;
+      white-space: normal !important;
+    }
+    /* Preserve line breaks only where two different speakers appear or
+       where the Alleluia response was explicitly broken after line one. */
+    .rule-item.hours-section .reader-text.hours-preserve-line-breaks {
+      white-space: pre-line !important;
+    }
+    .rule-item.hours-section .reader-text.hours-traditional {
+      font-family: 'Ponomar', Georgia, serif;
+      font-size: 20px;
+      line-height: 1.75;
+      font-weight: 400;
+      -webkit-hyphens: manual;
+      hyphens: manual;
+    }
+    .rule-item.hours-traditional-section .section-header .prayer-title {
+      font-family: 'Ponomar', Georgia, serif !important;
+      font-size: 22px !important;
+      font-weight: 400 !important;
+    }
+    .rule-item.hours-section .reader-text.hours-heading {
+      font-size: 18px;
+      line-height: 1.42;
+      font-weight: 700;
+      color: var(--accent-dark);
+      text-align: center;
+      text-align-last: center;
+      margin-top: 8px;
+    }
+    .rule-item.hours-section .reader-text.hours-rubric {
+      font-size: 14px;
+      line-height: 1.53;
+      font-weight: 600;
+      color: var(--accent-dark);
+      text-align: left;
+      text-align-last: left;
+      padding-top: 4px;
+    }
+    .rule-item.hours-section .reader-text.hours-dialogue {
+      text-align: left;
+      text-align-last: left;
+    }
+    .rule-item.hours-section .reader-text.hours-response {
+      text-align: center;
+      text-align-last: center;
+      line-height: 1.65;
+    }
+    .rule-item.hours-section .reader-text.hours-doxology {
+      color: var(--text);
+      text-align: left;
+      text-align-last: left;
+    }
+    /* Psalm first letters are part of the word itself, not drop caps. */
+    .rule-item.hours-section .reader-text.hours-text::first-letter {
+      float: none !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      font-size: inherit !important;
+      line-height: inherit !important;
+    }
+    /* Prevent justification and Android WebView breaking the initial glyph
+       away from its first word (e.g. Глаголы in Psalm 5). */
+    .rule-item.hours-section .reader-text .hours-initial-word {
+      display: inline !important;
+      white-space: nowrap !important;
+      word-spacing: normal !important;
+      letter-spacing: normal !important;
+    }
+    /* Android WebView can justify across adjacent styled spans even inside
+       a nowrap inline wrapper. A single inline-block for the FIRST PSALM WORD
+       keeps the red Г visually joined to "лаголы" without modifying text,
+       glyph offsets or coloring. Other liturgical initials are unaffected. */
+    .rule-item.hours-section-psalm .reader-text .hours-initial-word {
+      display: inline-block !important;
+      white-space: nowrap !important;
+      text-align: left !important;
+      text-align-last: left !important;
+      word-spacing: normal !important;
+      letter-spacing: normal !important;
+      vertical-align: baseline !important;
+    }
+
+    /* first-hour-psalm-initial-spacing-20261116: keep the highlighted glyph visually joined to its word. */
+    .rule-item.hours-section-psalm .reader-text .hours-initial-word > .hours-mark-initial {
+      margin-right: -0.10em !important;
+    }
+    .rule-item.hours-section .reader-text .hours-mark-initial {
+      display: inline !important;
+      float: none !important;
+      vertical-align: baseline !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      color: var(--liturgical) !important;
+      font-size: inherit !important;
+      line-height: inherit !important;
+      font-weight: 700;
+    }
+    .rule-item.hours-section .reader-text.hours-traditional .hours-mark-initial {
+      font-weight: 400;
+    }
+    .rule-item.hours-section .reader-text .hours-mark-speaker,
+    .rule-item.hours-section .reader-text .hours-mark-cue {
+      color: var(--liturgical) !important;
+      font-style: normal !important;
+      font-weight: 700;
+    }
+    .rule-item.hours-section .reader-text .hours-mark-mercy,
+    .rule-item.hours-section .reader-text .hours-mark-alleluia {
+      color: var(--liturgical) !important;
+      font-style: normal !important;
+      font-weight: 700;
+    }
+    .rule-item.hours-section .reader-text .hours-mark-doxology {
+      color: var(--accent-dark) !important;
+      font-weight: 600;
+      font-style: normal !important;
+    }
+    .rule-item.hours-section .reader-text .hours-mark-repeat {
+      color: var(--secondary) !important;
+      font-weight: 400;
+      font-style: normal !important;
+      white-space: nowrap;
+    }
+
+    /* MOLITVOSLOV_THIRD_HOUR_RUSSIAN_FULL_20261120_V1
+       Russian prayer labels precede original rows; no text edits. */
+    .rule-item.hours-third-hour .psalter-shared-rubric {
+      color: var(--secondary);
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 15px;
+      font-style: normal;
+      font-weight: 700;
+      line-height: 1.35;
+      text-align: left;
+      margin: 11px 0 5px;
+    }
+    /* MOLITVOSLOV_THIRD_HOUR_TRADITIONAL_FULL_20261120_V1
+       Church Slavonic prayer headings should use the actual Ponomar glyph
+       font, not the civil-script Georgia inherited from Russian Hour 3. */
+    .rule-item.hours-third-hour.hours-traditional-section .psalter-shared-rubric {
+      font-family: 'Ponomar', Georgia, serif !important;
+      font-size: 19px;
+      font-weight: 400;
+      font-style: normal;
+      line-height: 1.55;
+      text-align: left;
+      color: var(--liturgical);
+    }
+    /* Only the explicitly marked rows of the First Hour receive rules. */
+    .rule-item.hours-section .reader-row.hours-row-divider-after {
+      padding-bottom: 12px;
+      margin-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    /* Align the post-Psalm Alleluia and mercy on the normal left margin. */
+    .rule-item.hours-section-postpsalm .reader-text.hours-response {
+      text-align: left !important;
+      text-align-last: left !important;
+    }
+    .rule-item.hours-section-postpsalm .reader-text .hours-mark-alleluia,
+    .rule-item.hours-section-postpsalm .reader-text .hours-mark-mercy {
+      color: var(--text) !important;
+      font-weight: 400 !important;
+    }
+    .rule-item.hours-section-postpsalm .reader-text .hours-mark-repeat {
+      font-size: 1.05em;
+      font-weight: 500;
+    }
+    /* Liturgical instructions are brief marginal notes, not prayers. */
+    .rule-item.hours-section-instruction .reader-text.hours-presentation-comment {
+      color: var(--secondary) !important;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 14px !important;
+      line-height: 1.45 !important;
+      font-style: italic !important;
+      font-weight: 400 !important;
+      text-align: left !important;
+      text-align-last: left !important;
+    }
+    .rule-item.hours-section-hymn .reader-text.hours-presentation-placeholder {
+      color: var(--accent-dark) !important;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 15px !important;
+      line-height: 1.42 !important;
+      font-style: italic !important;
+      font-weight: 400 !important;
+      text-align: left !important;
+      text-align-last: left !important;
+    }
+    .rule-item.hours-section-hymn .reader-text.hours-presentation-rubric-label {
+      color: var(--accent-dark) !important;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 15px !important;
+      line-height: 1.4 !important;
+      font-style: italic !important;
+      font-weight: 500 !important;
+      text-align: left !important;
+      text-align-last: left !important;
+    }
+    .rule-item.hours-section-hymn .reader-row.hours-row-compact-after {
+      margin-bottom: 2px !important;
+    }
+
+    /* First Hour: the Trisagion rubric flows directly into weekday choices.
+       No horizontal rule or excessive whitespace before their accordions. */
+    .rule-item.hours-section.hours-no-bottom-divider {
+      margin-bottom: 4px !important;
+      padding-bottom: 0 !important;
+      border-bottom: 0 !important;
+    }
+    .rule-item.hours-section.hours-no-bottom-divider + .rule-item.hours-collapsible {
+      margin-top: 5px !important;
+    }
+    .rule-item.hours-section-rubric .reader-text.hours-presentation-liturgical-label {
+      color: var(--liturgical) !important;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 16px !important;
+      line-height: 1.48 !important;
+      font-weight: 600 !important;
+      font-style: normal !important;
+      text-align: left !important;
+      text-align-last: left !important;
+    }
+    /* Tropar and kondak placeholders share the same italic brown treatment. */
+    .rule-item.hours-section-rubric .reader-text.hours-presentation-placeholder,
+    .rule-item.hours-section-hymn .reader-text.hours-presentation-placeholder {
+      color: var(--accent-dark) !important;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 15px !important;
+      line-height: 1.44 !important;
+      font-style: italic !important;
+      font-weight: 600 !important;
+      text-align: left !important;
+      text-align-last: left !important;
+    }
+    .rule-item.hours-section-rubric .reader-text.hours-presentation-comment {
+      color: var(--secondary) !important;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 14px !important;
+      line-height: 1.48 !important;
+      font-style: italic !important;
+      font-weight: 400 !important;
+      text-align: left !important;
+      text-align-last: left !important;
+    }
+    .rule-item.hours-section-conditional .reader-text .hours-mark-cue {
+      color: var(--liturgical) !important;
+      font-weight: 700 !important;
+    }
+
+    /* First Hour, final rubrics: a single rule after the Saturday option. */
+    .rule-item.hours-section.hours-divider-before {
+      border-top: 1px solid var(--border) !important;
+      padding-top: 12px !important;
+      margin-top: 10px !important;
+    }
+    /* The 40 / 12 / thrice responses belong to the normal left text edge. */
+    .rule-item.hours-section .reader-text.hours-presentation-left-response {
+      text-align: left !important;
+      text-align-last: left !important;
+    }
+    /* Editorially marked service cues: no italics, normal font size. */
+    .rule-item.hours-section .reader-text.hours-presentation-liturgical-red {
+      color: var(--liturgical) !important;
+      font-size: 16px !important;
+      line-height: 1.5 !important;
+      font-style: normal !important;
+      font-weight: 600 !important;
+      text-align: left !important;
+      text-align-last: left !important;
+    }
+    /* Trisagion label is also used in the concluding prayer section. */
+    .rule-item.hours-section .reader-text.hours-presentation-liturgical-label {
+      color: var(--liturgical) !important;
+      font-size: 16px !important;
+      line-height: 1.48 !important;
+      font-weight: 600 !important;
+      font-style: normal !important;
+      text-align: left !important;
+      text-align-last: left !important;
+    }
+    /* The choir's words remain normal text; only "Хор:" is rubric red. */
+    .rule-item.hours-section .reader-text.hours-dialogue {
+      color: var(--text);
+    }
+
+    /* A rubric inside the optional St Ephrem prayer is a comment, never
+       main prayer text or an enlarged red initial. */
+    .rule-item.hours-section.hours-collapsible .reader-text.hours-presentation-comment {
+      color: var(--secondary) !important;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 14px !important;
+      line-height: 1.48 !important;
+      font-weight: 400 !important;
+      font-style: italic !important;
+      text-align: left !important;
+      text-align-last: left !important;
+    }
+    .rule-item.hours-section.hours-collapsible .reader-row.hours-row-compact-after {
+      margin-bottom: 3px !important;
+    }
+
+    /* Standalone RU uses the same red liturgical accents as the ЦС reader.
+       In CS+RU the Russian translation keeps its secondary color scheme. */
+    .rule-item.hours-section .reader-text.hours-russian-primary .hours-mark-devotional,
+    .rule-item.hours-section-postpsalm .reader-text.hours-russian-primary .hours-mark-alleluia,
+    .rule-item.hours-section-postpsalm .reader-text.hours-russian-primary .hours-mark-mercy {
+      color: var(--liturgical) !important;
+      font-weight: 700 !important;
+      font-style: normal !important;
+    }
+    /* A note quoting "Слава Отцу..." is still a NOTE, never prayer-red.
+       Also guard against generic reader inline mark styles. */
+    .rule-item.hours-section .reader-text.hours-presentation-comment,
+    .rule-item.hours-section .reader-text.hours-presentation-comment span {
+      color: var(--secondary) !important;
+      font-style: italic !important;
+      font-weight: 400 !important;
+    }
+    .rule-item.hours-section .reader-text.hours-presentation-comment .hours-mark-devotional,
+    .rule-item.hours-section .reader-text.hours-presentation-comment .hours-mark-mercy,
+    .rule-item.hours-section .reader-text.hours-presentation-comment .hours-mark-doxology {
+      color: var(--secondary) !important;
+      font-weight: 400 !important;
+    }
+
+    /* An ordinary prayer spoken by the priest/reader in the First Hour.
+       Explicitly neutralize red full-doxology styling in this dialogue only. */
+    .rule-item.hours-section .reader-text.hours-presentation-plain-prayer,
+    .rule-item.hours-section .reader-text.hours-presentation-plain-prayer span {
+      color: var(--text) !important;
+      font-style: normal !important;
+    }
+
+    /* Final First Hour choir in CS, RU and CS + RU: suppress all inherited
+       doxology coloring, including nested spans from the shared renderer. */
+    .rule-item.hours-section .reader-text.hours-presentation-choir-response,
+    .rule-item.hours-section .reader-text.hours-presentation-choir-response span:not(.hours-mark-speaker),
+    .rule-item.hours-section .reader-text.hours-presentation-choir-response span:not(.hours-mark-speaker) * {
+      color: var(--text) !important;
+      font-weight: 400 !important;
+    }
+    .rule-item.hours-section .reader-text.hours-presentation-choir-response .hours-mark-speaker,
+    .rule-item.hours-section .reader-text.hours-presentation-choir-response .hours-mark-speaker * {
+      color: var(--liturgical) !important;
+      font-weight: 700 !important;
+    }
+
+    /* Strongly scoped first-hour visual exceptions. They complement
+       the runtime's per-segment color, with no effect on other services. */
+    .rule-item.hours-section
+    .reader-text.hours-russian-primary.hours-presentation-final-trinity
+    .hours-mark-initial {
+      color: var(--liturgical) !important;
+      font-weight: 700 !important;
+      font-size: inherit !important;
+    }
+    .rule-item.hours-section
+    .reader-text.hours-russian-primary.hours-presentation-choir-response,
+    .rule-item.hours-section
+    .reader-text.hours-russian-primary.hours-presentation-choir-response span:not(.hours-mark-speaker) {
+      color: var(--text) !important;
+      font-weight: 400 !important;
+    }
+    .rule-item.hours-section
+    .reader-text.hours-russian-primary.hours-presentation-choir-response
+    .hours-mark-speaker {
+      color: var(--liturgical) !important;
+      font-weight: 700 !important;
+    }
+
+
+    /* Traditional First Hour: all rubrics, labels, notes and native accordion
+       summaries are genuine Church Slavonic Unicode rendered with Ponomar.
+       Never change the parallel, ordinary CS or Russian hours readers. */
+    .rule-item.hours-traditional-section.hours-collapsible .hours-accordion-toggle {
+      font-family: 'Ponomar', Georgia, serif !important;
+      color: var(--liturgical) !important;
+      font-size: 19px !important;
+      font-weight: 400 !important;
+      font-style: normal !important;
+      line-height: 1.6 !important;
+    }
+    .rule-item.hours-traditional-section .reader-text.hours-traditional,
+    .rule-item.hours-traditional-section .reader-text.hours-traditional span {
+      font-family: 'Ponomar', Georgia, serif !important;
+      font-style: normal !important;
+    }
+    .rule-item.hours-traditional-section .reader-text.hours-traditional.hours-presentation-comment,
+    .rule-item.hours-traditional-section .reader-text.hours-traditional.hours-presentation-comment span {
+      color: var(--secondary) !important;
+      font-family: 'Ponomar', Georgia, serif !important;
+      font-size: 17px !important;
+      font-style: normal !important;
+      font-weight: 400 !important;
+    }
+    .rule-item.hours-traditional-section .reader-text.hours-traditional.hours-presentation-placeholder,
+    .rule-item.hours-traditional-section .reader-text.hours-traditional.hours-presentation-rubric-label {
+      font-family: 'Ponomar', Georgia, serif !important;
+      font-size: 18px !important;
+      font-style: normal !important;
+      font-weight: 400 !important;
+    }
+    .rule-item.hours-traditional-section .reader-text.hours-traditional.hours-presentation-liturgical-label,
+    .rule-item.hours-traditional-section .reader-text.hours-traditional.hours-presentation-liturgical-red {
+      font-family: 'Ponomar', Georgia, serif !important;
+      font-size: 18px !important;
+      font-style: normal !important;
+      font-weight: 400 !important;
+    }
+    .rule-item.hours-traditional-section .reader-text.hours-traditional .hours-mark-devotional,
+    .rule-item.hours-traditional-section .reader-text.hours-traditional .hours-mark-speaker,
+    .rule-item.hours-traditional-section .reader-text.hours-traditional .hours-mark-cue,
+    .rule-item.hours-traditional-section .reader-text.hours-traditional .hours-mark-mercy,
+    .rule-item.hours-traditional-section .reader-text.hours-traditional .hours-mark-alleluia {
+      color: var(--liturgical) !important;
+      font-weight: 400 !important;
+      font-style: normal !important;
+    }
+    .rule-item.hours-traditional-section .reader-text.hours-traditional .hours-mark-repeat {
+      color: var(--secondary) !important;
+      font-weight: 400 !important;
+      font-style: normal !important;
+      white-space: nowrap;
+    }
+
+    /* First Hour responses with 3/12/40 repetitions start at the left. */
+    .rule-item.hours-section .reader-text.hours-mercy-left,
+    .rule-item.hours-section .reader-text.hours-presentation-shared-mercy,
+    .rule-item.hours-section .reader-text.hours-presentation-left-response {
+      text-align: left !important;
+      text-align-last: left !important;
+    }
+
+    /* First Hour ЦС + РУС: shared rubrics and doxologies are not duplicated.
+       Both language columns are retained only for genuinely different texts. */
+    .rule-item.hours-parallel-first-hour
+    .reader-text.hours-presentation-shared-doxology .hours-mark-devotional,
+    .rule-item.hours-parallel-first-hour
+    .reader-text.hours-presentation-shared-alleluia .hours-mark-devotional,
+    .rule-item.hours-parallel-first-hour
+    .reader-text.hours-presentation-shared-mercy .hours-mark-devotional {
+      color: var(--liturgical) !important;
+      font-style: normal !important;
+      font-weight: 700 !important;
+    }
+    .rule-item.hours-parallel-first-hour
+    .reader-text.hours-presentation-shared-alleluia .hours-mark-repeat,
+    .rule-item.hours-parallel-first-hour
+    .reader-text.hours-presentation-shared-mercy .hours-mark-repeat {
+      color: var(--secondary) !important;
+      font-style: normal !important;
+      font-weight: 400 !important;
+    }
+    /* One centered Bogorodichen caption sits above the two translated texts,
+       including inside the Great Lent disclosure. */
+    .rule-item.hours-parallel-first-hour
+    .reader-text.hours-presentation-shared-heading {
+      width: 100%;
+      color: var(--liturgical) !important;
+      text-align: center !important;
+      text-align-last: center !important;
+      font-size: 16px !important;
+      line-height: 1.45 !important;
+      font-style: normal !important;
+      font-weight: 600 !important;
+      padding: 3px 0 5px;
+    }
+    .rule-item.hours-parallel-first-hour
+    .reader-text.hours-presentation-shared-heading .hours-mark-cue {
+      color: var(--liturgical) !important;
+    }
+    .rule-item.hours-section.hours-collapsible.hours-divider-after-dropdown {
+      border-bottom: 1px solid var(--border) !important;
+      padding-bottom: 15px !important;
+      margin-bottom: 18px !important;
+    }
+
+    /* Third Hour: follow First Hour typography in the Church Slavonic tab.
+       These rules are scoped to ordinary-3 and do not alter the Psalter or
+       the existing First Hour. */
+    .rule-item.hours-third-hour
+    .reader-text.hours-presentation-shared-doxology .hours-mark-devotional,
+    .rule-item.hours-third-hour
+    .reader-text.hours-presentation-shared-alleluia .hours-mark-devotional,
+    .rule-item.hours-third-hour
+    .reader-text.hours-presentation-shared-mercy .hours-mark-devotional {
+      color: var(--liturgical) !important;
+      font-weight: 700 !important;
+      font-style: normal !important;
+    }
+    .rule-item.hours-third-hour
+    .reader-text.hours-presentation-shared-alleluia .hours-mark-repeat,
+    .rule-item.hours-third-hour
+    .reader-text.hours-presentation-shared-mercy .hours-mark-repeat {
+      color: var(--secondary) !important;
+      font-weight: 400 !important;
+      font-style: normal !important;
+    }
+    .rule-item.hours-third-hour .reader-text.hours-presentation-shared-mercy,
+    .rule-item.hours-third-hour .reader-text.hours-response {
+      text-align: left !important;
+      text-align-last: left !important;
+    }
+    .rule-item.hours-third-hour.hours-collapsible .hours-accordion-toggle {
+      color: var(--accent-dark) !important;
+      font-style: normal !important;
+      font-family: Georgia, "Times New Roman", serif;
+    }
+    .rule-item.hours-third-hour.hours-collapsible
+    .reader-text.hours-presentation-rubric-label {
+      color: var(--liturgical) !important;
+      font-weight: 600 !important;
+      font-style: normal !important;
+      text-align: left !important;
+      text-align-last: left !important;
+    }
+    /* MOLITVOSLOV_THIRD_HOUR_FIRST_HOUR_PRESENTATION_20261120_V1
+       Mirror the First Hour editorial rhythm while preserving Church
+       Slavonic text and speaker cues. These rules apply ONLY to Hour 3.
+       Normal prayer prose fills each line; dialogues stay left aligned.
+       Psalm headings, prayer initials and rubric reds remain inherited
+       from the same First Hour renderer, not duplicated overrides. */
+    .rule-item.hours-third-hour.hours-section-opening
+    .reader-text.hours-prose {
+      text-align: justify !important;
+      text-align-last: left !important;
+      text-justify: inter-word;
+    }
+    .rule-item.hours-third-hour.hours-section-opening
+    .reader-text.hours-dialogue,
+    .rule-item.hours-third-hour.hours-section-opening
+    .reader-text.hours-response,
+    .rule-item.hours-third-hour.hours-section-opening
+    .reader-text.hours-mercy-left {
+      text-align: left !important;
+      text-align-last: left !important;
+    }
+    .rule-item.hours-third-hour .reader-row.hours-row-compact-after {
+      margin-bottom: 2px !important;
+    }
+
+    /* THIRD_HOUR_TYPOGRAPHY_SAFE_20261120_V2 — only Third Hour pre-troparion cue. */
+    .rule-item.hours-third-hour .reader-text.hours-presentation-tropar-intro,
+    .rule-item.hours-third-hour .reader-text.hours-presentation-tropar-intro span {
+      color: var(--accent-dark) !important;
+      font-weight: 700 !important;
+      font-style: normal !important;
+    }
+    .rule-item.hours-third-hour.hours-traditional-section
+    .reader-text.hours-presentation-tropar-intro {
+      -webkit-text-stroke: 0.12px currentColor;
     }
     #reader-scroll-track {
       position: fixed;
@@ -1963,5 +2877,423 @@ export const READER_STYLES = String.raw`
         opacity: 1;
         transform: translateY(0);
       }
+    }
+    /* Single action menu on the left. Ponomar/reader text styles unchanged. */
+    body:not(.book-mode) .has-reader-action-menu {
+      position: relative;
+      overflow: visible;
+    }
+    body:not(.book-mode) .reader-action-container {
+      position: absolute;
+      left: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 50;
+      font-family: system-ui, sans-serif;
+    }
+    body:not(.book-mode) .has-reader-action-menu .reader-action-trigger {
+      position: relative;
+      width: 34px;
+      height: 34px;
+      padding: 0;
+      border-radius: 17px;
+      border: 1px solid var(--border);
+      background: rgba(241,223,194,.96);
+      /* The reader's --secondary may be nearly white in dark/custom themes. */
+      color: #4B301D;
+      font-size: 25px;
+      line-height: 29px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      touch-action: manipulation;
+    }
+    body:not(.book-mode) .reader-action-menu {
+      display: none;
+      position: absolute;
+      top: 34px;
+      left: 0;
+      width: 210px;
+      padding: 5px;
+      background: #FFF4DE;
+      border: 1px solid rgba(120,80,42,.3);
+      border-radius: 12px;
+      box-shadow: 0 6px 18px rgba(47,27,15,.25);
+      z-index: 65;
+    }
+    body:not(.book-mode) .reader-action-menu.is-open {
+      display: flex;
+      flex-direction: column;
+    }
+    body:not(.book-mode) .reader-action-menu .section-action,
+    body:not(.book-mode) .reader-action-menu .document-action,
+    body:not(.book-mode) .reader-action-menu .inline-share-action {
+      position: relative !important;
+      top: auto !important;
+      left: auto !important;
+      right: auto !important;
+      transform: none !important;
+      width: 100% !important;
+      height: 42px !important;
+      min-height: 42px !important;
+      margin: 0 !important;
+      padding: 0 11px !important;
+      border: 0 !important;
+      border-radius: 8px !important;
+      background: transparent !important;
+      color: #70482E !important;
+      display: flex !important;
+      justify-content: flex-start !important;
+      gap: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      text-align: left;
+    }
+    body:not(.book-mode) .reader-action-menu .section-action::after,
+    body:not(.book-mode) .reader-action-menu .document-action::after {
+      content: 'Добавить к себе';
+    }
+    body:not(.book-mode) .reader-action-menu .section-action.active::after,
+    body:not(.book-mode) .reader-action-menu .document-action.active::after {
+      content: 'Убрать из избранного';
+    }
+    body:not(.book-mode) .reader-action-menu .inline-share-action::after {
+      content: 'Поделиться';
+    }
+    body:not(.book-mode) .document-header.has-reader-action-menu .rule-title,
+    body:not(.book-mode) .section-header.has-reader-action-menu .prayer-title {
+      padding-left: 45px !important;
+      padding-right: 45px !important;
+    }
+    body:not(.book-mode) .hours-accordion.has-reader-action-menu .reader-action-container {
+      top: 7px;
+      left: 9px;
+      transform: none;
+    }
+    body:not(.book-mode) .hours-accordion.has-reader-action-menu .hours-accordion-toggle {
+      padding-left: 53px;
+      padding-right: 15px;
+    }
+
+    /* hours-psalm-flex-word-20261116 */
+    .rule-item.hours-section-psalm .reader-text .hours-initial-word {
+      display: inline-flex !important;
+      flex-flow: row nowrap !important;
+      align-items: baseline !important;
+      gap: 0 !important;
+      white-space: nowrap !important;
+      word-spacing: 0 !important;
+      letter-spacing: 0 !important;
+      vertical-align: baseline !important;
+      text-align: left !important;
+    }
+    .rule-item.hours-section-psalm .reader-text .hours-initial-word > span {
+      display: inline !important;
+      flex: 0 0 auto !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      word-spacing: 0 !important;
+      letter-spacing: 0 !important;
+    }
+
+    /* CANON_ODE_MENU_JUSTIFY_20261117
+       У песней канона остаётся только меню ⋮ в заголовке.
+       Сохранение/удаление из избранного и передача доступны внутри ⋮.
+       Прямые иконки за пределами меню не показываем. */
+    body:not(.book-mode) .rule-item.canon-section .section-header > .section-action,
+    body:not(.book-mode) .rule-item.canon-section .section-header > .document-action,
+    body:not(.book-mode) .rule-item.canon-section .section-header > .inline-share-action,
+    body:not(.book-mode) .rule-item.canon-section .section-header > .section-share-action {
+      display: none !important;
+    }
+    body:not(.book-mode) .rule-item.canon-section .section-header.has-reader-action-menu
+      > .reader-action-container {
+      display: block !important;
+    }
+    /* Both Russian and Church Slavonic canon text are justified. In a block
+       with an inline rubric (e.g., Ирмос/Припев) the actual line box belongs
+       to .reader-inline, not to its inline .reader-text child. */
+    body:not(.book-mode) .rule-item.canon-section .reader-column,
+    body:not(.book-mode) .rule-item.canon-section .reader-inline,
+    body:not(.book-mode) .rule-item.canon-section .reader-text.canon-church,
+    body:not(.book-mode) .rule-item.canon-section .reader-text.canon-russian {
+      text-align: justify !important;
+      text-align-last: left !important;
+      text-justify: inter-word !important;
+      overflow-wrap: break-word;
+      word-break: normal;
+      -webkit-hyphens: auto;
+      hyphens: auto;
+    }
+
+
+    /* CANON_RUSSIAN_NOW_GLORY_LINK_20261117: only the Glory immediately preceding And now.
+       Preserve the separator after And now and between independent hymns. */
+    body:not(.book-mode) .rule-item.canon-section.canon-glory-before-now {
+      border-bottom: none !important;
+      margin-bottom: 0 !important;
+      padding-bottom: 6px !important;
+    }
+
+    /* CANON_PARALLEL_RU_BREAKS_NO_REFRAIN_LABEL_20261117: suppress only an embedded Russian "Припев:" rubric in
+       CS+RU. The refrain itself stays visible, selectable and shareable. */
+    .rule-item.canon-section .reader-text.canon-russian.canon-parallel-translation
+      .canon-parallel-refrain-label {
+      display: none !important;
+    }
+
+    /* PENITENTIAL_TRADITIONAL_LABELS_20261117 — only the penitential canon / traditional tab */
+    .rule-item.canon-traditional-penitential-section .reader-label {
+      display: none !important;
+    }
+    .rule-item.canon-traditional-penitential-section .section-header .prayer-title {
+      font-family: 'Ponomar', Georgia, serif !important;
+      font-weight: 400;
+      font-size: 21px;
+      line-height: 31px;
+      color: var(--accent-dark) !important;
+    }
+    .rule-item.canon-traditional-penitential-section .reader-inline .reader-inline-label {
+      font-family: 'Ponomar', Georgia, serif !important;
+      font-style: normal !important;
+      font-weight: 400 !important;
+      font-size: 1em;
+      line-height: inherit;
+      color: var(--liturgical) !important;
+      margin-right: 6px;
+    }
+    .rule-item.canon-traditional-penitential-section .reader-inline.prayer-inline .reader-inline-label,
+    .rule-item.canon-traditional-penitential-section .reader-inline.prayer-inline .reader-text,
+    .rule-item.canon-traditional-penitential-section .reader-inline.canon-long-label .reader-inline-label,
+    .rule-item.canon-traditional-penitential-section .reader-inline.canon-long-label .reader-text {
+      display: inline !important;
+      margin-bottom: 0;
+    }
+    .rule-item.canon-traditional-penitential-section .reader-text.canon-traditional-penitential {
+      font-family: 'Ponomar', Georgia, serif !important;
+      text-align: justify !important;
+      text-align-last: left !important;
+    }
+
+    /* CANON_HEADER_ONLY_ACTIONS_RUBRIC_40_20261117: only canon readers opt into these rules. */
+    body:not(.book-mode) .canon-no-inline-actions .document-header .rule-title {
+      padding-left: 6px !important;
+      padding-right: 6px !important;
+    }
+    body:not(.book-mode) .canon-no-inline-actions .section-header .prayer-title {
+      padding-left: 8px !important;
+      padding-right: 8px !important;
+    }
+    .rule-item.canon-section .reader-inline.canon-auto-long-label .reader-inline-label,
+    .rule-item.canon-section .reader-inline.canon-auto-long-label .reader-text {
+      display: block !important;
+    }
+    .rule-item.canon-section .reader-inline.canon-auto-long-label .reader-inline-label {
+      margin-right: 0 !important;
+      margin-bottom: 3px;
+    }
+
+    /* THEOTOKOS_TRADITIONAL_RUBRICS_20261117: only Theotokos Paraklesis / traditional script. */
+    .rule-item.canon-theotokos-traditional-section .reader-label {
+      display: none !important;
+    }
+    .rule-item.canon-theotokos-traditional-section .section-header .prayer-title {
+      font-family: 'Ponomar', Georgia, serif !important;
+      font-style: normal !important;
+      font-weight: 400 !important;
+      font-size: 21px;
+      line-height: 31px;
+      color: var(--accent-dark) !important;
+    }
+    .rule-item.canon-theotokos-traditional-section .reader-inline .reader-inline-label {
+      font-family: 'Ponomar', Georgia, serif !important;
+      font-style: normal !important;
+      font-weight: 400 !important;
+      font-size: 1em;
+      line-height: inherit;
+      color: var(--liturgical) !important;
+      margin-right: 6px;
+    }
+    .rule-item.canon-theotokos-traditional-section .reader-text.canon-theotokos-traditional {
+      font-family: 'Ponomar', Georgia, serif !important;
+      text-align: justify !important;
+      text-align-last: left !important;
+    }
+    .rule-item.canon-theotokos-traditional-section .reader-inline.prayer-inline:not(.canon-auto-long-label) .reader-inline-label,
+    .rule-item.canon-theotokos-traditional-section .reader-inline.prayer-inline:not(.canon-auto-long-label) .reader-text {
+      display: inline !important;
+    }
+    .rule-item.canon-theotokos-traditional-section .reader-inline.canon-auto-long-label .reader-inline-label,
+    .rule-item.canon-theotokos-traditional-section .reader-inline.canon-auto-long-label .reader-text {
+      display: block !important;
+    }
+    .rule-item.canon-theotokos-traditional-section .reader-inline.canon-auto-long-label .reader-inline-label {
+      margin-bottom: 3px;
+      margin-right: 0;
+    }
+
+    /* CANON_FLOWING_LONG_HEADER_JUSTIFIED_TRAD_TITLE_20261117: traditional Theotokos title, distinct from the native header. */
+    body:not(.book-mode) .canon-traditional-document-justified .document-header {
+      justify-content: flex-start !important;
+    }
+    body:not(.book-mode) .canon-traditional-document-justified .document-header .rule-title {
+      width: 100% !important;
+      padding: 0 2px !important;
+      margin: 0 !important;
+      /* CANON_HEADER_RIGHT_LANGUAGE_AND_BALANCED_TRAD_TITLE_20261117: balanced, natural wrapping instead of an isolated word
+         after the comma; keep full-width justification without huge glyphs. */
+      text-align: justify !important;
+      text-align-last: left !important;
+      text-justify: inter-word;
+      text-wrap: balance;
+      overflow-wrap: normal !important;
+      word-break: normal !important;
+      hyphens: none !important;
+      letter-spacing: normal !important;
+      font-size: clamp(20px, 5.8vw, 23px) !important;
+      line-height: 1.5 !important;
+      font-family: 'Ponomar', Georgia, serif !important;
+      font-weight: 400 !important;
+    }
+
+    /* GUARDIAN_ANGEL_TRADITIONAL_LABELS_20261117 — Guardian Angel canon, traditional tab only */
+    .rule-item.canon-guardian-angel-traditional-section .reader-label {
+      display:none !important;
+    }
+    .rule-item.canon-guardian-angel-traditional-section .section-header .prayer-title {
+      font-family:'Ponomar', Georgia, serif !important;
+      font-style:normal !important;
+      font-weight:400 !important;
+      font-size:21px;
+      line-height:31px;
+      color:var(--accent-dark) !important;
+    }
+    .rule-item.canon-guardian-angel-traditional-section .reader-inline .reader-inline-label {
+      font-family:'Ponomar', Georgia, serif !important;
+      font-style:normal !important;
+      font-weight:400 !important;
+      font-size:1em;
+      line-height:inherit;
+      color:var(--liturgical) !important;
+      margin-right:6px;
+    }
+    .rule-item.canon-guardian-angel-traditional-section .reader-text.canon-guardian-angel-traditional {
+      font-family:'Ponomar', Georgia, serif !important;
+      text-align:justify !important;
+      text-align-last:left !important;
+    }
+    .rule-item.canon-guardian-angel-traditional-section .reader-inline.prayer-inline:not(.canon-auto-long-label) .reader-inline-label,
+    .rule-item.canon-guardian-angel-traditional-section .reader-inline.prayer-inline:not(.canon-auto-long-label) .reader-text {
+      display:inline !important;
+    }
+    .rule-item.canon-guardian-angel-traditional-section .reader-inline.canon-auto-long-label .reader-inline-label,
+    .rule-item.canon-guardian-angel-traditional-section .reader-inline.canon-auto-long-label .reader-text {
+      display:block !important;
+    }
+    .rule-item.canon-guardian-angel-traditional-section .reader-inline.canon-auto-long-label .reader-inline-label {
+      margin:0 0 3px !important;
+    }
+
+    /* GUARDIAN_ANGEL_TRADITIONAL_RUBRICS_V2_20261117: only Guardian Angel canon, traditional-script sections. */
+    .rule-item.canon-guardian-angel-traditional-section .reader-label {
+      display: none !important;
+    }
+    .rule-item.canon-guardian-angel-traditional-section .reader-inline .reader-inline-label {
+      font-family: 'Ponomar', Georgia, serif !important;
+      font-style: normal !important;
+      color: var(--liturgical) !important;
+    }
+
+    /* BIBLE_CONTINUOUS_COLUMNS_PAGINATION_20261117: Bible-only flowing columns. Each DOM verse stays whole,
+       even though its rendered lines may continue on the next book page. */
+    body.book-mode #reader.book-track .book-column-track {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      box-sizing: border-box;
+      padding: 0 8px;
+      column-fill: auto;
+      column-gap: 16px;
+      overflow: visible;
+      will-change: transform;
+    }
+    body.book-mode #reader.book-track .book-column-track .bible-verse-section {
+      break-inside: auto;
+      page-break-inside: auto;
+      orphans: 2;
+      widows: 2;
+    }
+    body.book-mode #reader.book-track .book-column-track .bible-chapter-start .section-header {
+      break-after: avoid-column;
+    }
+
+    /* BIBLE_COLUMN_WIDTH_GUARDS_20261117: Bible book page geometry only. */
+    body.book-mode { width: 100%; max-width: 100%; overflow-x: hidden; }
+    body.book-mode #book-viewport,
+    body.book-mode #reader.book-track { width: 100%; max-width: 100%; overflow-x: hidden; }
+    body.book-mode #reader.book-track .book-column-track {
+      box-sizing: border-box;
+      column-fill: auto;
+      overflow: visible;
+    }
+    body.book-mode #reader.book-track .book-column-track > .rule-item,
+    body.book-mode #reader.book-track .book-column-track .reader-row,
+    body.book-mode #reader.book-track .book-column-track .reader-column,
+    body.book-mode #reader.book-track .book-column-track .reader-inline {
+      min-width: 0;
+      max-width: 100%;
+      break-inside: auto;
+    }
+
+
+    /* Standalone prayers: full available width, left-aligned title.
+       Keep the actions on the right so the first word is not obscured. */
+    body:not(.book-mode) #reader.standalone-prayer .document-header .rule-title,
+    body:not(.book-mode) #reader.standalone-prayer .document-header.has-reader-action-menu .rule-title {
+      display: block;
+      width: 100%;
+      min-width: 0;
+      padding-left: 0 !important;
+      padding-right: 44px !important;
+      text-align: left !important;
+      text-align-last: left !important;
+      white-space: normal;
+      overflow-wrap: break-word;
+      word-break: normal;
+    }
+    body:not(.book-mode) #reader.standalone-prayer .document-header.has-reader-action-menu .reader-action-container {
+      left: auto;
+      right: 0;
+    }
+    /* MOLITVOSLOV_STANDALONE_PRAYER_HYPHENATION_V1 */
+    /* Only standalone prayers receive automatic hyphenation. */
+    html[lang="ru"] body:not(.book-mode) #reader.standalone-prayer .document-header .rule-title {
+      -webkit-hyphens: auto;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      word-break: normal;
+    }
+    /* MOLITVOSLOV_MISC_PRAYER_COMPACT_TITLE_V1 */
+    /* Only prayers launched from MiscPrayers: keep the complete heading. */
+    body:not(.book-mode) #reader.misc-prayer-compact-title .document-header .rule-title,
+    body:not(.book-mode) #reader.misc-prayer-compact-title .document-header.has-reader-action-menu .rule-title {
+      display: block;
+      width: 100%;
+      min-width: 0;
+      font-size: 24.5px;
+      line-height: 30px;
+      text-align: left !important;
+      text-align-last: left !important;
+      padding-left: 0 !important;
+      padding-right: 48px !important;
+      white-space: normal;
+      hyphens: auto;
+      -webkit-hyphens: auto;
+      overflow-wrap: break-word;
+      word-break: normal;
+    }
+    body:not(.book-mode) #reader.misc-prayer-compact-title .document-header.has-reader-action-menu .reader-action-container {
+      left: auto;
+      right: 0;
     }
   `;

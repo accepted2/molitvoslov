@@ -1,14 +1,25 @@
 export const READER_RUNTIME = String.raw`
     const DATA = __READER_PAYLOAD__;
     const bookMode = DATA.document ?.readerMode === 'book';
+    const bookFlowColumns = bookMode && DATA.document?.bookFlowColumns === true;
+    // BIBLE_CONTINUOUS_COLUMNS_PAGINATION_20261117: page anchors refer to the ORIGINAL verse nodes, not clones.
+    let bookPageAnchors = [];
     document.body.classList.toggle( 'book-mode', bookMode );
     document.body.classList.toggle('embedded-reader', !!DATA.document.embedded);
     const reader = document.getElementById( 'reader' );
+    // CANON_FLOWING_LONG_HEADER_JUSTIFIED_TRAD_TITLE_20261117 - opt-in to the Theotokos traditional document heading.
+    reader.classList.toggle(
+      'canon-traditional-document-justified',
+      DATA.document.justifyTraditionalDocumentTitle === true
+    );
+    // CANON_HEADER_ONLY_ACTIONS_RUBRIC_40_20261117
+    reader.classList.toggle('canon-no-inline-actions', !!DATA.document.hideInlineActions);
     const bookViewport = document.getElementById( 'book-viewport' );
     const selectionBar = document.getElementById( 'selection-bar' );
     const selectionCount = document.getElementById( 'selection-count' );
     const selectionHint = document.getElementById( 'selection-hint' );
     const saveButton = document.getElementById( 'selection-save' );
+    const shareButton = document.getElementById('selection-share');
     const cancelButton = document.getElementById( 'selection-cancel' );
     const startHandle = document.getElementById( 'start-handle' );
     const endHandle = document.getElementById( 'end-handle' );
@@ -56,6 +67,42 @@ export const READER_RUNTIME = String.raw`
       button.replaceChildren( svg );
       button.title = active ? 'Убрать из избранного' : 'Добавить в избранное';
       button.setAttribute( 'aria-label', button.title );
+    };
+    const createPsalmMenuButton = psalmId => {
+      const button=el('button','psalter-psalm-menu');
+      button.type='button';
+      button.dataset.psalmId=String(psalmId);
+      button.setAttribute('aria-label','Действия с псалмом');
+      button.title='Сохранить или поделиться';
+      button.textContent='⋮';
+      return button;
+    };
+    const createShareButton = (scope, sectionIndex = -1) => {
+      const button = el('button','inline-share-action ' +
+        (scope === 'document' ? 'document-share-action' : 'section-share-action'));
+      button.type = 'button';
+      button.dataset.shareScope = scope;
+      button.dataset.shareSectionIndex = String(sectionIndex);
+      button.title = 'Поделиться';
+      button.setAttribute('aria-label',button.title);
+      const svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
+      for(const [name,value] of Object.entries({viewBox:'0 0 24 24',width:'19',
+        height:'19',fill:'none',stroke:'currentColor','stroke-width':'1.8',
+        'stroke-linecap':'round','stroke-linejoin':'round'})){
+        svg.setAttribute(name,value);
+      }
+      const line=document.createElementNS('http://www.w3.org/2000/svg','path');
+      line.setAttribute('d','M8.7 13.5 15.3 17.4 M15.3 6.6 8.7 10.5');
+      svg.appendChild(line);
+      [[18,5],[6,12],[18,19]].forEach(coords => {
+        const dot=document.createElementNS('http://www.w3.org/2000/svg','circle');
+        dot.setAttribute('cx',String(coords[0]));
+        dot.setAttribute('cy',String(coords[1]));
+        dot.setAttribute('r','3');
+        svg.appendChild(dot);
+      });
+      button.appendChild(svg);
+      return button;
     };
     const titleEl = ( tag, className, value ) => {
       const node = el( tag, className );
@@ -166,7 +213,35 @@ export const READER_RUNTIME = String.raw`
       );
       container.appendChild( wrapper );
     };
+    const expandedHoursAccordions = new Set();
+    const createReaderActionMenu = (saveAction, shareAction) => {
+      const wrapper=el('div','reader-action-container');
+      const trigger=el('button','reader-action-trigger','⋮');
+      trigger.type='button';
+      trigger.setAttribute('aria-label','Действия с текстом');
+      wrapper.appendChild(trigger);
+      const menu=el('div','reader-action-menu');
+      if(saveAction)menu.appendChild(saveAction);
+      if(shareAction)menu.appendChild(shareAction);
+      wrapper.appendChild(menu);
+      return wrapper;
+    };
+    const createHoursPrayerRowMenu = itemId => {
+      const save=el('button','hours-row-save','Сохранить себе');
+      save.type='button';
+      save.dataset.itemId=String(itemId);
+      const share=el('button','hours-row-share','Поделиться');
+      share.type='button';
+      share.dataset.itemId=String(itemId);
+      const menu=createReaderActionMenu(save,share);
+      menu.classList.add('hours-prayer-actions');
+      menu.querySelector('.reader-action-trigger')
+        ?.setAttribute('aria-label','Действия с молитвой');
+      return menu;
+    };
     const renderDocument = () => {
+      reader.classList.toggle('misc-prayer-compact-title', DATA.document.miscPrayerCompactTitle === true); // MOLITVOSLOV_MISC_PRAYER_COMPACT_TITLE_V1
+      reader.classList.toggle('standalone-prayer', DATA.document.presentation === 'standalone-prayer');
       reader.classList.toggle('psalter-kathisma-reader',
         (DATA.document.sections || []).some(section => section.className === 'psalter-psalm-section'));
           reader.classList.toggle(
@@ -184,13 +259,26 @@ export const READER_RUNTIME = String.raw`
         if ( DATA.document.title ) {
           documentHeader.appendChild( titleEl( 'h1', 'rule-title', DATA.document.title ) );
         }
-        if ( DATA.document.action ) {
-          const action = el( 'button', DATA.document.action.active ? 'document-action active'
-                : 'document-action' );
-          action.type = 'button';
-          setSaveHeartIcon( action, !!DATA.document.action.active );
-          action.dataset.actionKey = DATA.document.action.key;
-          documentHeader.appendChild( action );
+        if (!DATA.document.hideInlineActions) {
+        let documentSave=null;
+        if(DATA.document.action){
+          documentSave=el('button',DATA.document.action.active
+            ?'document-action active':'document-action');
+          documentSave.type='button';
+          setSaveHeartIcon(documentSave,!!DATA.document.action.active);
+          documentSave.dataset.actionKey=DATA.document.action.key;
+        }
+        if(!bookMode && !DATA.document.embedded &&
+           !reader.classList.contains('psalter-kathisma-reader')){
+          documentHeader.classList.add('has-reader-action-menu');
+          documentHeader.appendChild(createReaderActionMenu(
+            documentSave,createShareButton('document')));
+        }else{
+          if(documentSave)documentHeader.appendChild(documentSave);
+          if(!DATA.document.embedded &&
+             !reader.classList.contains('psalter-kathisma-reader'))
+            documentHeader.appendChild(createShareButton('document'));
+        }
         }
         reader.appendChild( documentHeader );
       }
@@ -219,34 +307,80 @@ export const READER_RUNTIME = String.raw`
       if ( DATA.document.description ) {
         reader.appendChild( el( 'div', 'rule-description', DATA.document.description ) );
       }
-      ( DATA.document.sections || [] ).forEach( section => {
+      ( DATA.document.sections || [] ).forEach( (section, sectionIndex) => {
           const wrapper = el( 'section', 'rule-item ' + ( section.className || '' ) );
           wrapper.dataset.itemId = String( section.progressAnchorId );
           wrapper.dataset.trackProgress = section.trackProgress === false ? 'false' : 'true';
           wrapper.dataset.actionKey = section.action?.key || '';
           wrapper.dataset.highlightGroupKey = section.highlightGroupKey || '';
           wrapper.dataset.chapterNumber = section.chapterNumber ? String( section.chapterNumber ) : '';
-          if ( section.title || section.action ) {
+          // Hours-only native disclosure. The summary is outside selectable
+          // prayer text, so toggling never changes saved ranges or offsets.
+          const hoursExpandable = section.collapsible === true &&
+            String(section.className || '').includes('hours-section') &&
+            !!section.title;
+          let rowsContainer = wrapper;
+          if (hoursExpandable) {
+            wrapper.classList.add('hours-collapsible');
+            const details = el('details', 'hours-accordion');
+            const accordionId = String(section.accordionId || section.progressAnchorId);
+            details.dataset.accordionId = accordionId;
+            details.open = expandedHoursAccordions.has(accordionId);
+            const summary = el('summary', 'hours-accordion-toggle', section.title);
+            summary.setAttribute('aria-label', section.title);
+            summary.addEventListener('click', event => event.stopPropagation());
+            details.appendChild(summary);
+            // Hours accordions are navigation, not entire prayers:
+            // no save heart, share icon, or three-dot menu in their titles.
+            const content = el('div', 'hours-accordion-content');
+            details.appendChild(content);
+            details.addEventListener('toggle', () => {
+              if (details.open) expandedHoursAccordions.add(accordionId);
+              else expandedHoursAccordions.delete(accordionId);
+            });
+            wrapper.appendChild(details);
+            rowsContainer = content;
+          } else if ( section.title || section.action ) {
+            const psalmMenu=String(section.className||'').includes('psalter-psalm-section');
+            const hoursSection=String(section.className||'').includes('hours-section');
             const header = el( 'div', 'section-header' );
             if ( section.title ) {
               header.appendChild( titleEl( 'h2', 'prayer-title', section.title ) );
             }
-            if ( section.action ) {
-              const action = el( 'button', section.action.active ? 'section-action active' : 'section-action'
-                );
-              action.type = 'button';
-              setSaveHeartIcon( action, !!section.action.active );
-              action.dataset.actionKey = section.action.key;
-              header.appendChild( action );
+            let sectionSave=null;
+            if(section.action && !psalmMenu && !DATA.document.hideInlineActions){
+              sectionSave=el('button',section.action.active
+                ?'section-action active':'section-action');
+              sectionSave.type='button';
+              setSaveHeartIcon(sectionSave,!!section.action.active);
+              sectionSave.dataset.actionKey=section.action.key;
+            }
+            if(DATA.document.hideInlineActions){
+              // Canon headers are display-only; only fixed header has actions.
+            }else if(psalmMenu){
+              header.classList.add('psalter-menu-header');
+              header.appendChild(createPsalmMenuButton(section.progressAnchorId));
+            }else if(hoursSection){
+              // Leave the full heading width for liturgical Hours.
+            }else if(!bookMode && !DATA.document.embedded){
+              header.classList.add('has-reader-action-menu');
+              header.appendChild(createReaderActionMenu(
+                sectionSave,createShareButton('section',sectionIndex)));
+            }else{
+              if(sectionSave)header.appendChild(sectionSave);
+              if(!DATA.document.embedded){
+                header.classList.add('has-share-action');
+                header.appendChild(createShareButton('section',sectionIndex));
+              }
             }
             wrapper.appendChild( header );
           }
           if ( section.note ) {
-            wrapper.appendChild( el( 'div', 'note', section.note ) );
+            rowsContainer.appendChild( el( 'div', 'note', section.note ) );
           }
           ( section.rows || [] ).forEach( row => {
             if (row.sharedTitle) {
-              wrapper.appendChild(
+              rowsContainer.appendChild(
                 el(
                   'div',
                   'psalter-shared-rubric',
@@ -256,6 +390,12 @@ export const READER_RUNTIME = String.raw`
             }
               const rowNode = el( 'div', row.layout === 'parallel' ? 'reader-row reader-row-parallel'
                     : 'reader-row' );
+              // Scoped to Hours: decorative separators and compact liturgical
+              // labels never alter the source text or selection offsets.
+              if (String(section.className || '').includes('hours-section')) {
+                if (row.dividerAfter === true) rowNode.classList.add('hours-row-divider-after');
+                if (row.compactAfter === true) rowNode.classList.add('hours-row-compact-after');
+              }
               ( row.blocks || [] ).forEach( block => {
                   const itemId = Number( block.id );
                   itemTextMap.set( itemId, block.text || '' );
@@ -280,8 +420,9 @@ export const READER_RUNTIME = String.raw`
                         .replace( /[\u0300-\u036f\u0483-\u0487]/g, '' ) .trim() .toLowerCase();
                     const inline = el( 'div', normalizedInlineLabel .startsWith( 'молитва' )
                           ? 'reader-inline prayer-inline' : 'reader-inline' );
-                    if (block.sourceType === 'canon' && block.canonTypography?.standaloneInlineLabel) {
-                      inline.classList.add('canon-long-label');
+                    if (block.sourceType === 'canon') {
+                      // Always measure canon label against available line width.
+                      inline.classList.add('canon-width-aware-label');
                     }
                     const inlineLabel = el( 'span', 'reader-inline-label', block.inlineLabel );
                     inline.appendChild(inlineLabel);
@@ -311,13 +452,24 @@ export const READER_RUNTIME = String.raw`
                   rowNode.appendChild( column );
                 }
               );
+              // Individual long prayer paragraphs receive their own ⋮
+              // actions; dropdown titles remain full-width and action-free.
+              const hoursPrayer=(row.blocks||[]).find(block =>
+                block.sourceType==='hours' &&
+                /(?:^|\\s)hours-prose(?:\\s|$)/.test(block.className||'') &&
+                String(block.text||'').trim().length>=45);
+              if(!DATA.document.embedded && hoursPrayer &&
+                  ['prayer','conditional'].includes(section.sectionKind)){
+                rowNode.classList.add('hours-prayer-action-row', 'has-reader-action-menu');
+                rowNode.appendChild(createHoursPrayerRowMenu(hoursPrayer.id));
+              }
               if ((row.blocks || []).some(block => block.anchorType === 'psalm_text')) {
                 rowNode.classList.add('psalter-psalm-verses-row');
               }
               if ((row.blocks || []).some(block => block.anchorType === 'kathisma_glory')) {
                 rowNode.classList.add('psalter-glory-row');
               }
-              wrapper.appendChild( rowNode );
+              rowsContainer.appendChild( rowNode );
             }
           );
           reader.appendChild( wrapper );
@@ -815,28 +967,180 @@ const computeFocusHighlightRanges = () => {
       }
       return ranges;
     };
-    const collectAkathistRefrainRanges = (value, extraResponses = false) => {
-      const standard = collectAkathistInvocationRanges(value);
+    // MOLITVOSLOV_AKATHIST_IKOS_BOUNDARY_ACCENTS_V1
+    // An invocation is a liturgical line/clause, not an arbitrary word
+    // "Радуйся" inside prose. Preserve original UTF-16 offsets.
+    const isAkathistResponseBoundary = (source, start) => {
+      const before = String(source || '').slice(0, start);
+      return !before.trim() ||
+        /(?:[.!?…;:][ \t]*|[\r\n][ \t]*)$/u.test(before);
+    };
+    const expandAkathistResponseHead = (source, range) => {
+      const value = String(source || '');
+      const end = range.end;
+      const suffix = value.slice(end);
+      // "Радуйся, ..." : only the invocation and the comma are red.
+      const immediate = suffix.match(/^[ \t]*,/u);
+      if (immediate) return {start: range.start, end: end + immediate[0].length};
+      // "Святителю Николае, ..." or another short address before comma.
+      // Maximum three extra words, 45 characters, no new sentences.
+      const head = suffix.match(/^([ \t]+(?:[\p{L}\u0300-\u036f\u0483-\u0489-]+[ \t]+){0,2}[\p{L}\u0300-\u036f\u0483-\u0489-]+[ \t]*),/u);
+      if (!head || head[0].length > 45 ||
+          /[;:!?.…\r\n]/u.test(head[1])) return range;
+      return {start: range.start, end: end + head[0].length};
+    };
+    // MOLITVOSLOV_AKATHIST_FIRST_WORD_RESPONSE_V1
+    // The source text and its UTF-16 offsets are immutable. Only the first
+    // complete (accent-aware) word in a recognized hymn response gets red ink.
+    const firstAkathistResponseWord = (source, range) => {
+      const tail = String(source || '').slice(range.start);
+      const word = tail.match(/^[\p{L}\p{M}]+(?:[-\u2011][\p{L}\p{M}]+)*/u);
+      return word
+        ? {start: range.start, end: range.start + word[0].length}
+        : range;
+    };
+    // Some Akathists do NOT use "Радуйся" or "Иисусе" at all. Discover
+    // other recurring opening formulas, but only if they are repeated at
+    // least three times at real clause boundaries within this same hymn.
+    // This avoids treating isolated quotations after colons as responses.
+    const collectAkathistRepeatedOpeningRanges = value => {
+      const source = String(value || '');
+      const {normalized, originalIndex} = normalizedAkathistRefrainWithIndex(source);
+      const forms = [
+        /Христос[ \t]+воскресе/giu,
+        /Гряди/giu,
+        /Благословен[ \t]+еси/giu,
+        // MOLITVOSLOV_AKATHIST_SHARED_SVYAT_REFRAIN_V1
+        // Count the triple "Свят" and "Свят еси" as one recurring family.
+        // Only the first word of every hymn response becomes red.
+        /(?:Свят[ \t]*,[ \t]*Свят[ \t]*,[ \t]*Свят|Свят[ \t]+еси)/giu,
+      ];
+      const output = [];
+      for (const pattern of forms) {
+        const candidates = [];
+        for (const match of normalized.matchAll(pattern)) {
+          const before = normalized[match.index - 1] || '';
+          const after = normalized[match.index + match[0].length] || '';
+          if (/\p{L}/u.test(before) || /\p{L}/u.test(after)) continue;
+          const start = originalIndex[match.index];
+          const last = originalIndex[match.index + match[0].length - 1];
+          if (!Number.isFinite(start) || !Number.isFinite(last) ||
+              !isAkathistResponseBoundary(source, start)) continue;
+          candidates.push({start, end: last + 1});
+        }
+        // The repeated response must be truly recurrent in the document.
+        if (candidates.length >= 3) output.push(...candidates);
+      }
+      return output;
+    };
+    // MOLITVOSLOV_AKATHIST_KONTAKION1_CHANT_V1
+    // MOLITVOSLOV_AKATHIST_PRAYER_PROSE_KONTAKION1_V1
+    // Kontakion 1 can have a one-time hymn cue after a colon.
+    // Three-time repetition is appropriate for Ikoses, not here.
+    const collectAkathistFirstKontakionCueRanges = value => {
+      const source = String(value || '');
+      const {normalized, originalIndex} = normalizedAkathistRefrainWithIndex(source);
+      const formula = /(?:Слава[ \t]+в[ \t]+вышних|Свят[ \t]*,[ \t]*Свят[ \t]*,[ \t]*Свят)/giu;
+      const ranges = [];
+      for (const match of normalized.matchAll(formula)) {
+        const before = normalized[match.index - 1] || '';
+        const after = normalized[match.index + match[0].length] || '';
+        if (/\p{L}/u.test(before) || /\p{L}/u.test(after)) continue;
+        const start = originalIndex[match.index];
+        const last = originalIndex[match.index + match[0].length - 1];
+        if (!Number.isFinite(start) || !Number.isFinite(last)) continue;
+        if (!/:[ \t\r\n]*$/u.test(source.slice(0, start))) continue;
+        ranges.push({start, end: last + 1});
+      }
+      return ranges;
+    };
+    const collectAkathistRefrainRanges = (value, extraResponses = false, firstKontakion = false) => {
+      const source = String(value || '');
+      const standard = collectAkathistInvocationRanges(source);
+      const repeated = collectAkathistRepeatedOpeningRanges(source);
+      const firstKontakionCues = firstKontakion
+        ? collectAkathistFirstKontakionCueRanges(source) : [];
       const combined = extraResponses
-        ? [...standard, ...collectAkathistAdditionalResponseRanges(value)] : standard;
-      const quotedSpeech = collectAkathistQuotedSpeechRanges(value);
-      return combined.filter((range, index) =>
-        !quotedSpeech.some(quote => range.start >= quote.start && range.start < quote.end) &&
-        !combined.some((other, j) => j !== index && other.start <= range.start &&
-          other.end >= range.end && (other.start < range.start || other.end > range.end))
+        ? [...standard, ...collectAkathistAdditionalResponseRanges(source), ...repeated, ...firstKontakionCues]
+        : [...standard, ...repeated, ...firstKontakionCues];
+      const quotedSpeech = collectAkathistQuotedSpeechRanges(source);
+      const candidates = combined
+        .filter(range =>
+          isAkathistResponseBoundary(source, range.start) &&
+          !quotedSpeech.some(quote =>
+            range.start >= quote.start && range.start < quote.end));
+      // MOLITVOSLOV_AKATHIST_PROSE_VOCATIVE_GUARD_V1
+      // A solitary "Иисусе" in the introductory narration is not a
+      // refrain when the Ikos has a repeated "Слава Тебе" litany.
+      // Derive the dominant response from this Ikos, not the Akathist name.
+      // No source text or UTF-16 offsets are changed.
+      const familyFor = range => {
+        const head = normalizedAkathistRefrainWithIndex(
+          source.slice(range.start, range.end)
+        ).normalized.toLowerCase().replace(/[ \t]+/gu, ' ').trim();
+        if (/^слава теб[еѣ]$/u.test(head)) return 'glory';
+        if (/^рад(?:уйся|уйтеся|ꙋйсѧ)$/u.test(head)) return 'rejoice';
+        if (/^(?:иисусе|іисусе|исусе|и исусе)$/u.test(head)) return 'jesus';
+        if (/^(?:прииди|приди|прийди)$/u.test(head)) return 'come';
+        if (/^господи мой$/u.test(head)) return 'my-lord';
+        return head;
+      };
+      const candidateFamilies = new Map();
+      if (extraResponses) {
+        for (const range of candidates) {
+          const family = familyFor(range);
+          candidateFamilies.set(family,(candidateFamilies.get(family)||0)+1);
+        }
+      }
+      const dominant = [...candidateFamilies.entries()]
+        .sort((a,b)=>b[1]-a[1])[0] || null;
+      const trusted = candidates.filter(range => {
+        if (!extraResponses) return true;
+        // A solitary "Иисусе" after "сказал:" is ambiguous narrative,
+        // not a repeated chant. Only accept single Ikos invocations when
+        // their immediately preceding clause explicitly cues the refrain.
+        if (!dominant || dominant[1] < 2) {
+          const preface = normalizedAkathistRefrainWithIndex(
+            source.slice(Math.max(0, range.start - 100), range.start)
+          ).normalized.toLowerCase();
+          return /(?:вопи[^\s:]*|взыв[^\s:]*|зов[^\s:]*|поем|поют|пойте|воспева[^\s:]*|возглаша[^\s:]*|восклица[^\s:]*)[^.!?;:\n]{0,44}:\s*$/iu.test(preface);
+        }
+        if (dominant[1] < 3) return true;
+        const family=familyFor(range);
+        return family===dominant[0] ||
+          (candidateFamilies.get(family)||0) >= 2;
+      });
+
+      const accepted = trusted
+        .map(range => firstAkathistResponseWord(source, range))
+        .sort((left, right) => left.start - right.start || right.end - left.end);
+      // Keep the longest address if "Господи" and "Господи мой" overlap.
+      return accepted.filter((range, index) =>
+        !accepted.slice(0,index).some(other => other.end > range.start)
       );
     };
     const collectAkathistAlleluiaRanges = value =>
       collectAkathistWordRanges(value, /(?:Аллилуиа|Аллилуия|Алилуиа|Алілуя|Аллілуя)/giu, true);
-    const collectAkathistJoyBreaks = (value, extraResponses = false) =>
-      new Set(collectAkathistRefrainRanges(value, extraResponses).map(range => range.start).filter(at => at > 0));
-    const collectAkathistInitialRanges = (value, includeInvocations = true, extraResponses = false) => {
+    const collectAkathistJoyBreaks = (value, extraResponses = false, firstKontakion = false) =>
+      new Set(collectAkathistRefrainRanges(value, extraResponses, firstKontakion)
+        .map(range => range.start)
+        .filter(at => at > 0 && !/[\r\n][ \t]*$/u.test(String(value || '').slice(0, at))));
+    const collectAkathistInitialRanges = (value, includeInvocations = true, extraResponses = false, firstKontakion = false) => {
       const source = String(value || '');
-      const invocationRanges = includeInvocations ? collectAkathistRefrainRanges(source, extraResponses) : [];
+      const invocationRanges = includeInvocations ? collectAkathistRefrainRanges(source, extraResponses, firstKontakion) : [];
       const ranges = [...invocationRanges];
       // Preserve the existing red first letter of ordinary paragraphs.
       const opening = source.match(/^\s*([\p{L}][\u0300-\u036f\u0483-\u0489]*)/u);
-      if (opening) {
+      // MOLITVOSLOV_AKATHIST_IKOS_OPENING_INITIAL_V1
+      // Paint only the FIRST glyph of an Ikos introduction red, even when
+      // the section contains hymn responses further down. A response
+      // beginning at the first glyph already paints its full first word.
+      // Keep Kontakion 1 and other Akathist sections unchanged.
+      // MOLITVOSLOV_AKATHIST_KONTAKION1_OPENING_INITIAL_V1
+      // Ikoses AND first Kontakion: red initial at the start of narration.
+      // The condition below still prevents a duplicate first-letter
+      // range when the first word itself is a recognized response.
+      if (opening && (!includeInvocations || extraResponses || firstKontakion)) {
         const start = opening.index + opening[0].indexOf(opening[1]);
         if (!invocationRanges.some(range => range.start === start)) {
           ranges.push({start, end: start + opening[1].length});
@@ -1569,9 +1873,9 @@ const collectPsalterRubricRanges = value => {
           itemConfig?.metadata?.special === 'kontakion_before'
         );
         const akathistJoyBreaks = hasAkathistInvocations
-          ? collectAkathistJoyBreaks(text, isAkathistIkos) : new Set();
+          ? collectAkathistJoyBreaks(text, isAkathistIkos, isAkathistFirstKontakion) : new Set();
         const akathistInitialRanges = isAkathist
-          ? collectAkathistInitialRanges(text, hasAkathistInvocations, isAkathistIkos) : [];
+          ? collectAkathistInitialRanges(text, hasAkathistInvocations, isAkathistIkos, isAkathistFirstKontakion) : [];
         const akathistAlleluiaRanges = isAkathistKontakion ? collectAkathistAlleluiaRanges(text) : [];
  const isPsalterPrayer =
   String(itemConfig?.className || '')
@@ -2362,7 +2666,29 @@ const psalterVerseNumberRanges = isPsalterText ? collectPsalterVerseNumberRanges
             });
           }
         }
+        // Hours' liturgical accents use exact original UTF-16 offsets.
+        // Styling never changes source text, selection, or bookmarks.
+        const hoursMarks = itemConfig?.sourceType === 'hours' &&
+          Array.isArray(itemConfig?.hoursMarks)
+            ? itemConfig.hoursMarks.filter(range =>
+                Number.isFinite(range.start) && Number.isFinite(range.end) &&
+                range.start >= 0 && range.end <= text.length &&
+                range.end > range.start)
+            : [];
         const boundaries = new Set([ 0, text.length, ]);
+        hoursMarks.forEach(range => {
+          boundaries.add(range.start);
+          boundaries.add(range.end);
+        });
+        // On narrow Android screens the first red glyph and its following
+        // letters can visually separate under justified text. Keep the
+        // entire opening word on one visual line; its original source text,
+        // offsets and red initial mark are not modified.
+        const hoursInitialWordEnd = itemConfig?.sourceType === 'hours' &&
+          hoursMarks.some(mark => mark.kind === 'initial' && mark.start === 0)
+            ? (text.match(/^\S+/u)?.[0]?.length || 0)
+            : 0;
+        if (hoursInitialWordEnd > 1) boundaries.add(hoursInitialWordEnd);
         canonRanges.forEach(range => {
           boundaries.add(range.start);
           boundaries.add(range.end);
@@ -2520,6 +2846,7 @@ const psalterVerseNumberRanges = isPsalterText ? collectPsalterVerseNumberRanges
         let civilAfterTroparToneWrapper = null;
         let parallelAfterRepeatWrapper = null;
         let akathistAlleluiaWrapper = null;
+        let hoursInitialWordWrapper = null;
         for ( let index = 0;
           index < points.length - 1;
           index += 1 ) {
@@ -2567,6 +2894,11 @@ const psalterVerseNumberRanges = isPsalterText ? collectPsalterVerseNumberRanges
         if (parallelTroparBreak === start) fragment.appendChild(document.createElement('br'));
 
         const span = document.createElement('span');
+        const hoursMark = hoursMarks.find(range =>
+          midpoint >= range.start && midpoint < range.end);
+        if (hoursMark) {
+          span.classList.add('hours-mark-' + hoursMark.kind);
+        }
         if (canonRanges.length) {
           for (const range of canonRanges) {
             if (start >= range.start && end <= range.end) {
@@ -2978,6 +3310,42 @@ appendStyledSegment(
   isCanonChurch && start === 0 && !canonRanges.some(range => range.kind.endsWith('-cue'))
 );
 
+// First Hour, Russian-only "Пресвятая Троица" has a red initial П.
+const isFirstHourPrimaryRussian =
+  itemConfig?.sourceType === 'hours' &&
+  itemConfig?.metadata?.entryId === 'ordinary-1' &&
+  itemConfig?.metadata?.language === 'russian' &&
+  String(itemConfig?.className || '').includes('hours-russian-primary');
+if (isFirstHourPrimaryRussian &&
+    String(itemConfig?.className || '').includes('hours-presentation-final-trinity') &&
+    hoursMark?.kind === 'initial' && start === 0 &&
+    text.slice(start, end).startsWith('П')) {
+  span.style.setProperty('color', 'var(--liturgical)', 'important');
+  span.style.setProperty('font-weight', '700', 'important');
+}
+
+// Unlike that Russian-only exception, the final choir is shared by all
+// First Hour languages. General liturgical decoration can put a red nested
+// span around "Слава..."; override both the rendered segment and its children.
+// This is scoped to the *final* choir-response, not the earlier red doxologies.
+const isFirstHourFinalChoir =
+  itemConfig?.sourceType === 'hours' &&
+  itemConfig?.metadata?.entryId === 'ordinary-1' &&
+  String(itemConfig?.className || '').split(/\s+/u)
+    .includes('hours-presentation-choir-response');
+if (isFirstHourFinalChoir) {
+  const isSpeaker = hoursMark?.kind === 'speaker' &&
+    /^Хор:/u.test(text.slice(start, end));
+  const choirColor = isSpeaker ? 'var(--liturgical)' : 'var(--text)';
+  const choirWeight = isSpeaker ? '700' : '400';
+  span.style.setProperty('color', choirColor, 'important');
+  span.style.setProperty('font-weight', choirWeight, 'important');
+  span.querySelectorAll('*').forEach(child => {
+    child.style.setProperty('color', choirColor, 'important');
+    child.style.setProperty('font-weight', choirWeight, 'important');
+  });
+}
+
 const psalterPrayerAccentText =
   isPsalterPrayerAccent
     ? text.slice(start, end).trim()
@@ -3129,8 +3497,16 @@ if (isStandaloneTraditionalPsalterPrayer &&
       } else {
         civilAfterMercyWrapper = null;
         // A whole Alleluia and its punctuation may wrap only as one unit.
+        const withinInitialHoursWord = hoursInitialWordEnd > 1 &&
+          start >= 0 && end <= hoursInitialWordEnd;
         const withinAlleluia = isAkathist && akathistAlleluiaRanges.some(range => start >= range.start && end <= range.end);
-        if (withinAlleluia) {
+        if (withinInitialHoursWord) {
+          if (!hoursInitialWordWrapper) {
+            hoursInitialWordWrapper = el('span', 'hours-initial-word');
+            fragment.appendChild(hoursInitialWordWrapper);
+          }
+          hoursInitialWordWrapper.appendChild(span);
+        } else if (withinAlleluia) {
           if (!akathistAlleluiaWrapper) {
             akathistAlleluiaWrapper = el('span', 'akathist-alleluia');
             fragment.appendChild(akathistAlleluiaWrapper);
@@ -3413,7 +3789,7 @@ if (
               node.classList.remove( 'saved-run-end' );
             }
           );
-        document .querySelectorAll( '.book-page' ) .forEach( page => {
+        document .querySelectorAll( '.book-page, .book-column-track' ) .forEach( page => {
               const items = Array.from( page.children ) .filter( node => node.classList ?.contains(
                           'rule-item' ) );
               let runStart = null;
@@ -3700,6 +4076,7 @@ if (
         saveButton.textContent = savedRange ? 'Удалить' : 'Сохранить';
         saveButton.classList.toggle('delete-mode', !!savedRange);
         saveButton.disabled = count <= 0 || state.savePending;
+        shareButton.disabled = count <= 0 || state.savePending;
         if (DATA.document.embedded) {
           post({type:'embedded-selection-info', active:true, count,
             pending:state.savePending, removable:!!savedRange});
@@ -4016,6 +4393,17 @@ if (
           return;
         }
         state.bookPage = clampBookPage( page );
+        if(bookFlowColumns){
+          const track=reader.querySelector(':scope > .book-column-track');
+          if(track){
+            track.style.transition=animated ? 'transform 140ms ease-out' : 'none';
+            track.style.transform='translate3d('+
+              (-state.bookPage*state.bookPageWidth+(dragOffset||0)*0.08)+'px,0,0)';
+          }
+          bookViewport.scrollLeft=0;
+          updateBookPageIndicator();
+          return;
+        }
         const pages = Array.from( reader.querySelectorAll( ':scope > .book-page' ) );
         pages.forEach( ( pageNode, index ) => {
             const active = index === state.bookPage;
@@ -4032,6 +4420,10 @@ if (
     const bookSourceNodes = () => {
         const nodes = [];
         Array.from( reader.children ).forEach( child => {
+            if(child.classList?.contains('book-column-track')){
+              nodes.push(...Array.from(child.children));
+              return;
+            }
             if ( child.classList ?.contains( 'book-page' ) ) {
               nodes.push( ...Array.from( child.children ) );
               return;
@@ -4051,13 +4443,68 @@ if (
         if ( !bookMode || !bookViewport ) {
           return;
         }
-        const currentAnchor = reader.querySelector( '.book-page.active .rule-item[data-track-progress="true"]'
-          ) ?.dataset ?.itemId || null;
+        const currentAnchor = bookFlowColumns
+          ? (bookPageAnchors[state.bookPage] || null)
+          : (reader.querySelector('.book-page.active .rule-item[data-track-progress="true"]')
+            ?.dataset?.itemId || null);
+        const previousTotal=Math.max(1,state.bookPageCount);
+        const previousPage=state.bookPage;
         const nodes = bookSourceNodes();
         reader.replaceChildren();
         reader.classList.add( 'book-track' );
         bookViewport.scrollLeft = 0;
         state.bookPageWidth = Math.max( 1, bookViewport .clientWidth );
+        if(bookFlowColumns){
+          const width=state.bookPageWidth;
+          const track=el('div','book-column-track');
+          // BIBLE_COLUMN_WIDTH_GUARDS_20261117: one exact viewport-width column stride.
+          // The gap is also the sum of the two page-side margins.
+          const sideInset=Math.min(18,Math.max(8,Math.floor(width*0.045)));
+          track.style.width=width+'px';
+          track.style.minWidth=width+'px';
+          track.style.maxWidth=width+'px';
+          track.style.padding='0 '+sideInset+'px';
+          track.style.columnGap=(sideInset*2)+'px';
+          track.style.columnWidth=Math.max(1,width-sideInset*2)+'px';
+          reader.appendChild(track);
+          nodes.forEach(node=>track.appendChild(node));
+
+          // Columns retain a *single* verse DOM, even when it continues onto
+          // the following page. This preserves selection, crossrefs, IDs,
+          // highlighting and the original source character offsets.
+          const trackWidth=Math.max(width,track.scrollWidth);
+          state.bookPageCount=Math.max(1,Math.ceil((trackWidth+sideInset)/width));
+          const trackLeft=track.getBoundingClientRect().left;
+          const anchors=Array(state.bookPageCount).fill(null);
+          Array.from(track.children).forEach(node=>{
+            if(node.dataset?.trackProgress!=='true')return;
+            for(const rect of Array.from(node.getClientRects())){
+              if(rect.width<1||rect.height<1)continue;
+              const index=Math.floor((rect.left-trackLeft+1)/width);
+              if(index>=0&&index<anchors.length&&!anchors[index])
+                anchors[index]=String(node.dataset.itemId||'');
+            }
+          });
+          let seen=anchors.find(value=>!!value)||null;
+          for(let i=0;i<anchors.length;i++){
+            if(anchors[i])seen=anchors[i];
+            else anchors[i]=seen;
+          }
+          bookPageAnchors=anchors;
+          refreshSavedBookRunClasses();
+          if(currentAnchor){
+            const matches=bookPageAnchors.map((value,i)=>value===currentAnchor?i:-1)
+              .filter(i=>i>=0);
+            const fraction=previousTotal<=1?0:previousPage/(previousTotal-1);
+            const estimate=Math.round(fraction*Math.max(0,state.bookPageCount-1));
+            state.bookPage=matches.length
+              ? matches.reduce((best,i)=>Math.abs(i-estimate)<Math.abs(best-estimate)?i:best)
+              : estimate;
+          }
+          state.bookPage=clampBookPage(state.bookPage);
+          applyBookPage(state.bookPage,false);
+          return;
+        }
         let page = createBookPage( 0 );
         const newPage = () => {
             page = createBookPage( reader.children .length );
@@ -4108,6 +4555,15 @@ if (
     const pageForElement = element => {
         if ( !bookMode || !element ) {
           return 0;
+        }
+        if(bookFlowColumns){
+          const track=reader.querySelector(':scope > .book-column-track');
+          if(!track)return 0;
+          const node=element.closest('.rule-item')||element;
+          const rect=node.getClientRects()?.[0];
+          if(!rect)return 0;
+          return clampBookPage(Math.floor(
+            (rect.left-track.getBoundingClientRect().left+1)/state.bookPageWidth));
         }
         const page = element.closest( '.book-page' );
         if (!page) {
@@ -4205,6 +4661,54 @@ if (
         clearSelection();
       }, true );
     reader.addEventListener( 'click', event => {
+        const trigger=event.target.closest('.reader-action-trigger');
+        if(trigger){
+          event.preventDefault();
+          event.stopPropagation();
+          const menu=trigger.parentElement.querySelector('.reader-action-menu');
+          const opening=!menu?.classList.contains('is-open');
+          reader.querySelectorAll('.reader-action-menu.is-open').forEach(node=>
+            node.classList.remove('is-open'));
+          if(opening)menu?.classList.add('is-open');
+          return;
+        }
+        const actionMenu=event.target.closest('.reader-action-menu');
+        if(actionMenu)actionMenu.classList.remove('is-open');
+        else reader.querySelectorAll('.reader-action-menu.is-open').forEach(node=>
+          node.classList.remove('is-open'));
+        const psalmMenu=event.target.closest('.psalter-psalm-menu');
+        if(psalmMenu){
+          event.preventDefault();
+          event.stopPropagation();
+          post({type:'psalm-menu',psalmId:Number(psalmMenu.dataset.psalmId)});
+          return;
+        }
+        const hoursSave=event.target.closest('.hours-row-save');
+        const hoursShare=event.target.closest('.hours-row-share');
+        if(hoursSave || hoursShare){
+          event.preventDefault();
+          event.stopPropagation();
+          const itemId=Number((hoursSave||hoursShare).dataset.itemId);
+          const itemConfig=itemConfigMap.get(itemId);
+          if(!itemConfig||!String(itemConfig.text||'').trim())return;
+          if(hoursSave){
+            post({type:'save-selection',itemId,
+              start:0,end:itemConfig.text.length,text:itemConfig.text,
+              saveType:'hours_row'});
+          }else{
+            post({type:'share-selection',itemId,
+              text:itemConfig.text,itemTitle:itemConfig.itemTitle});
+          }
+          return;
+        }
+        const share = event.target.closest('.inline-share-action');
+        if(share){
+          event.preventDefault();
+          event.stopPropagation();
+          post({type:'share-section',wholeDocument:share.dataset.shareScope==='document',
+            sectionIndex:Number(share.dataset.shareSectionIndex)});
+          return;
+        }
         const action = event.target.closest( '.section-action, .document-action' );
         if (!action) {
           return;
@@ -4271,6 +4775,16 @@ if (
         clearSelection();
       }
     );
+    shareButton.addEventListener('click', event => {
+      event.preventDefault();
+      event.stopPropagation();
+      if(!state.active || state.savePending)return;
+      const text=selectionText(state.active);
+      const first=state.active.segments?.[0];
+      if(!text||!first)return;
+      post({type:'share-selection',itemId:Number(first.itemId),text,
+        itemTitle:itemTitleMap.get(Number(first.itemId)) || DATA.document.title || 'Цитата'});
+    });
     saveButton.addEventListener( 'click', event => {
         event.preventDefault();
         event.stopPropagation();
@@ -4348,8 +4862,12 @@ if (
           return;
         }
         if (bookMode) {
-          const currentPage = reader.querySelector( '.book-page[data-page-index="' + state.bookPage + '"]' );
-          const current = currentPage ?.querySelector( '.rule-item[data-track-progress="true"]' ) || items[0];
+          const currentPage = bookFlowColumns ? null
+            : reader.querySelector( '.book-page[data-page-index="' + state.bookPage + '"]' );
+          const activeAnchor=bookFlowColumns ? bookPageAnchors[state.bookPage] : null;
+          const current = (activeAnchor
+            ? reader.querySelector('.rule-item[data-track-progress="true"][data-item-id="'+activeAnchor+'"]')
+            : currentPage?.querySelector('.rule-item[data-track-progress="true"]')) || items[0];
           const denominator = Math.max( 1, state.bookPageCount - 1 );
           const progressPercent = state.bookPageCount <= 1 ? 100 : Math.round( ( state.bookPage / denominator
                   ) * 100 );
@@ -4393,8 +4911,12 @@ if (
       const items = Array.from(document.querySelectorAll('.rule-item[data-track-progress="true"]'));
       if (!items.length) return {scrollRatio};
       if (bookMode) {
-        const currentPage = reader.querySelector('.book-page[data-page-index="' + state.bookPage + '"]');
-        const current = currentPage?.querySelector('.rule-item[data-track-progress="true"]') || items[0];
+        const activeAnchor=bookFlowColumns ? bookPageAnchors[state.bookPage] : null;
+        const currentPage=bookFlowColumns?null
+          :reader.querySelector('.book-page[data-page-index="'+state.bookPage+'"]');
+        const current=(activeAnchor
+          ? reader.querySelector('.rule-item[data-track-progress="true"][data-item-id="'+activeAnchor+'"]')
+          : currentPage?.querySelector('.rule-item[data-track-progress="true"]')) || items[0];
         return {anchorId: Number(current.dataset.itemId), offset: state.bookPage, scrollRatio};
       }
       const center = window.scrollY + window.innerHeight / 2;
@@ -4667,7 +5189,12 @@ if (
           const preciseRange = hasOffsets && !wholeTypes.includes( targetSaveType );
           if (hasBookmarkOffset) {
             if (bookMode && DATA.document .progressOffsetMode === 'page') {
-              applyBookPage( bookmarkOffset, false );
+               const savedPageCount=Number(targetMetadata.bookmark_page_count||0);
+               const sameLayout=savedPageCount>0&&savedPageCount===state.bookPageCount;
+               applyBookPage(
+                 bookFlowColumns&&!sameLayout ? pageForElement(root) : bookmarkOffset,
+                 false
+               );
             } else {
               const progressRoot = root.closest( '.rule-item[data-track-progress="true"]' ) || root;
               const targetY = Math.max(
@@ -4757,10 +5284,12 @@ if (
         }
         const offset = Math.max( 0, Number( progress.offset || 0 ) );
         if (bookMode) {
-          const savedPage =
-            DATA.document .progressOffsetMode === 'page'
-              ? offset
-              : pageForElement( item );
+           const savedPage =
+             DATA.document .progressOffsetMode === 'page' &&
+             (!bookFlowColumns||
+               Number(progress.metadata?.page_count||0)===state.bookPageCount)
+               ? offset
+               : pageForElement( item );
           applyBookPage( savedPage, false );
         } else {
           const target = Math.max( 0, item.offsetTop + offset - ( window.innerHeight / 2 ) );
@@ -4793,8 +5322,11 @@ if (
           return;
         }
         if (bookMode) {
-          const savedPage = DATA.document .progressOffsetMode === 'page' ? Number( progress.offset || 0 )
-              : pageForElement( item );
+           const savedPage = DATA.document .progressOffsetMode === 'page' &&
+             (!bookFlowColumns||
+               Number(progress.metadata?.page_count||0)===state.bookPageCount)
+               ? Number( progress.offset || 0 )
+               : pageForElement( item );
           applyBookPage( savedPage, false );
         } else {
           const restoredOffset = progress.offsetRatio != null && Number.isFinite(Number(progress.offsetRatio))
@@ -4815,7 +5347,7 @@ if (
         return;
       }
 
-      const size = Math.max(14, Math.min(22, Number(rawSize) || 16.5));
+      const size = Math.max(14, Math.min(28, Number(rawSize) || 16.5));
       const lineHeight = size * 1.32;
       const dropCapSize = size * 2.72;
 
@@ -4839,15 +5371,38 @@ if (
     };
 
     const setBookTheme = theme => {
-      if (!bookMode) {
-        return;
-      }
-
+      if (!bookMode) return;
       document.body.classList.toggle('book-night', theme === 'night');
+    };
+
+    const setBookAppearance = settings => {
+      if (!bookMode || !settings) return;
+      const safeColor=value=>/^#[0-9a-fA-F]{6}$/.test(String(value||''));
+      const palette=String(settings.palette||'parchment');
+      const background=safeColor(settings.background)?settings.background:'#FBF0D9';
+      const text=safeColor(settings.text)?settings.text:'#3C2A20';
+      const dark=!!settings.dark;
+      const root=document.documentElement;
+      document.body.classList.toggle('book-night',dark);
+      root.style.setProperty('--book-paper',background);
+      root.style.setProperty('--book-body-color',text);
+      root.style.setProperty('--background',background);
+      root.style.setProperty('--surface',background);
+      root.style.setProperty('--text',text);
+      document.body.classList.toggle('book-custom',palette==='custom');
+      // Theme-only updates must not rebuild pagination or jump to page 1.
+      // The initial HTML already contains the scoped font size; run layout
+      // only when the user actually changes that size.
+      const requestedSize=Math.max(14,Math.min(28,Number(settings.fontSize)||16.5));
+      const currentSize=parseFloat(getComputedStyle(root).getPropertyValue('--book-font-size'));
+      if(!Number.isFinite(currentSize)||Math.abs(currentSize-requestedSize)>0.01){
+        setBookFontSize(requestedSize);
+      }
     };
 
     window.readerApi = {
       saveEmbeddedSelection: () => { if (DATA.document.embedded) saveButton.click(); },
+      shareEmbeddedSelection: () => { if (DATA.document.embedded) shareButton.click(); },
       clearEmbeddedSelection: () => { if (DATA.document.embedded) clearSelection(); },
       changeViewMode: key => {
         post({type: 'view-mode', value: key, progress: snapshotForViewSwitch()});
@@ -4919,6 +5474,7 @@ if (
       goToProgress: progress => goToProgress( progress ),
       setBookFontSize: size => setBookFontSize(size),
       setBookTheme: theme => setBookTheme(theme),
+      setBookAppearance: settings => setBookAppearance(settings),
       updateAction: ( actionKey, label, active, savedItemId = null ) => {
           const action = document.querySelector( '.section-action[data-action-key="' + actionKey +
               '"], .document-action[data-action-key="' + actionKey + '"]' );
@@ -4938,6 +5494,40 @@ if (
     loadSavedRanges();
     computeFocusHighlightRanges();
     itemTextMap.forEach( ( _text, itemId ) => renderTextItem( itemId ) );
+    // CANON_HEADER_ONLY_ACTIONS_RUBRIC_40_20261117: move the canon text below labels wider than 40% of the
+    // available text column. Recalculate after fonts load and on resize.
+    const layoutCanonInlineLabels = () => {
+      const nodes = reader.querySelectorAll('.reader-inline.canon-width-aware-label');
+      if (!nodes.length) return;
+      const canvas = document.createElement('canvas');
+      const context = canvas.getContext('2d');
+      if (!context) return;
+      nodes.forEach(node => {
+        const label = node.querySelector('.reader-inline-label');
+        if (!label) return;
+        const computed = window.getComputedStyle(label);
+        context.font = computed.font && computed.font !== ''
+          ? computed.font
+          : computed.fontStyle + ' ' + computed.fontWeight + ' ' +
+            computed.fontSize + ' ' + computed.fontFamily;
+        const labelWidth = context.measureText(label.textContent || '').width;
+        const availableWidth = node.getBoundingClientRect().width;
+        if (availableWidth > 0) {
+          node.classList.toggle(
+            'canon-auto-long-label',
+            labelWidth > 0.4 * availableWidth
+          );
+        }
+      });
+    };
+    const scheduleCanonLabelLayout = () => {
+      window.requestAnimationFrame(layoutCanonInlineLabels);
+    };
+    scheduleCanonLabelLayout();
+    if (document.fonts?.ready) {
+      document.fonts.ready.then(scheduleCanonLabelLayout).catch(() => {});
+    }
+    window.addEventListener('resize', scheduleCanonLabelLayout);
     if (DATA.focusTarget?.highlightQuery) {
       setTimeout(() => {
         highlightRangesByItem.clear();

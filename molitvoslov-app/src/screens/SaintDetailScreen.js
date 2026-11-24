@@ -16,8 +16,13 @@ import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
 import {getBundledCalendarIconSource} from '../data/calendarIconAssets';
 import {useLanguage} from '../context/LanguageContext';
+import {isChurchSlavonicHymn} from '../services/calendarHymnDisplay';
+import {previewCleanCalendarFeast, countPreviewChanges} from '../services/calendarSourceCleanupPreview';
+import {CalendarCleanupPreviewPanel} from '../components/reader/CalendarCleanupPreviewPanel';
 import {getOfflineCalendarDay} from '../services/calendarOfflineStore';
+import {findSaintForSharedLink} from '../services/saintShareResolver';
 import {CalendarSaveWholeButton, CalendarSelectableBody, makeCalendarSaveContext} from '../components/reader/CalendarSaveText';
+import {shareContent} from '../services/contentSharing';
 
 const formatDate = (value, language) => {
   if (!value) return '';
@@ -53,9 +58,11 @@ const Accordion = ({
   date,
   section,
   sourceTitle,
-}) => {
+
+  script = 'civil',}) => {
   const [open, setOpen] = useState(initialOpen || focusHighlight);
   const [wholeSaved, setWholeSaved] = useState(false);
+  const actionsRef=React.useRef(null);
   const [hasMoreText, setHasMoreText] = useState(false);
   const [atBottom, setAtBottom] = useState(false);
   const [scrollMetrics, setScrollMetrics] = useState({content: 0, viewport: height, y: 0});
@@ -63,12 +70,12 @@ const Accordion = ({
   if (!text) return null;
   const saveContext = makeCalendarSaveContext({
     feast, date, section, title: sourceTitle, sectionTitle: title,
-    fontFamily: styles.body.fontFamily,
+    fontFamily: script === 'csl' ? 'Ponomar' : styles.body.fontFamily,
   });
   const content = (
     <View style={styles.readingContent}>
-      {!!subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
-      <CalendarSelectableBody text={text} saveContext={saveContext} textStyle={styles.body} />
+      {!!subtitle && <Text style={[styles.subtitle, script === 'csl' && styles.ponomarSubtitle]}>{subtitle}</Text>}
+      <CalendarSelectableBody text={text} saveContext={saveContext} textStyle={[styles.body, script === 'csl' && styles.ponomarBody]} />
     </View>
   );
   return (
@@ -76,6 +83,8 @@ const Accordion = ({
       <View style={styles.accordionHeaderRow}>
         <Pressable
           onPress={() => setOpen((value) => !value)}
+          onLongPress={()=>actionsRef.current?.openMenu()}
+          delayLongPress={340}
           accessibilityRole="button"
           accessibilityState={{expanded: open}}
           style={[styles.accordionHeader, styles.accordionHeaderTap]}
@@ -89,7 +98,19 @@ const Accordion = ({
         </View>
         <View style={[styles.chevron, open && styles.chevronOpen]} />
         </Pressable>
-        <CalendarSaveWholeButton text={text} saveContext={saveContext} onSavedChange={setWholeSaved} />
+        <CalendarSaveWholeButton
+          ref={actionsRef}
+          text={text}
+          saveContext={saveContext}
+          menuVariant
+          onSavedChange={setWholeSaved}
+          onShare={()=>shareContent({
+            title:(sourceTitle||'Святой дня')+' — '+title,
+            text,
+            screen:'SaintDetail',
+            params:{date,focusSection:section,feastUid:feast?.sync_uid || feast?.id},
+          })}
+        />
       </View>
       {open && (
         <View style={styles.expandedWrap}>
@@ -153,46 +174,41 @@ export const SaintDetailScreen = ({route, navigation}) => {
   const {language} = useLanguage();
   const {feast, date, focusSection, feastId, feastUid, feastTitle} = route.params || {};
   const [calendarFeast, setCalendarFeast] = useState(feast || null);
+  const [sharedCardLoading, setSharedCardLoading] = useState(!feast && !!date);
+  const [sharedCardNotFound, setSharedCardNotFound] = useState(false);
   useEffect(() => {
     let active = true;
     setCalendarFeast(feast || null);
-    if (!date) return undefined;
-    const findFeast = (day) => {
-      const list = [day?.main_feast, ...(day?.all_feasts || [])].filter(Boolean);
-      const identity = feastUid || feast?.sync_uid;
-      const id = feastId ?? feast?.id;
-      const name = feastTitle || feast?.title;
-      const candidates = list.filter((entry) =>
-        (identity && String(entry.sync_uid) === String(identity)) ||
-        (id != null && String(entry.id) === String(id)) ||
-        (name && entry.title === name)
-      );
-      const fullness = (entry) =>
-        Number(Boolean(entry.life_content || entry.life_content_uk)) * 8 +
-        Number(Boolean(entry.icon_url)) * 4 +
-        Number(Boolean(entry.troparion_content)) * 2 +
-        Number(Boolean(entry.kontakion_content));
-      return candidates.sort((a, b) => fullness(b) - fullness(a))[0] || null;
-    };
-    const update = (day) => {
-      if (!active || !day) return;
-      const matched = findFeast(day);
-      if (matched) setCalendarFeast((previous) => {
-        const merged = {...(feast || {}), ...(previous || {})};
-        for (const [key, value] of Object.entries(matched)) {
-          if (value !== null && value !== undefined && value !== '') merged[key] = value;
-        }
-        return merged;
+    const shouldLoad = !feast && !!date;
+    setSharedCardLoading(shouldLoad);
+    setSharedCardNotFound(false);
+    if (!shouldLoad) return () => {active = false;};
+    // A direct HTTPS/Telegram link contains a date and optional feast identity,
+    // but not the full feast. Restore the card from bundled offline calendar.
+    getOfflineCalendarDay(date, language)
+      .then(day => {
+        if (!active) return;
+        const matched = findSaintForSharedLink(day, {
+          feastUid, feastId, feastTitle, focusSection,
+        });
+        if (matched) setCalendarFeast(matched);
+        else setSharedCardNotFound(true);
+      })
+      .catch(error => {
+        if (active) setSharedCardNotFound(true);
+        console.warn('Saint card offline:', error?.message || error);
+      })
+      .finally(() => {
+        if (active) setSharedCardLoading(false);
       });
-    };
-    if (!feast) getOfflineCalendarDay(date, language).then(update).catch((error) =>
-      console.warn('Saint card offline:', error?.message || error)
-    );
-    // The search result already passes its complete calendar card. Do not
-    // overwrite it with a second, potentially older server record.
     return () => {active = false;};
-  }, [date, feastId, feastUid, feastTitle, language, feast]);
-  const resolvedFeast = calendarFeast || feast || {};
+  }, [date, feastId, feastUid, feastTitle, focusSection, language, feast]);
+  const cleanupComparisonEnabled = process.env.EXPO_PUBLIC_CALENDAR_CLEANUP_PREVIEW === '1';
+  const [cleanupPreviewActive, setCleanupPreviewActive] = useState(false);
+  const originalFeast = calendarFeast || feast || {};
+  const cleanedPreviewFeast = previewCleanCalendarFeast(originalFeast);
+  const cleanupPreviewStats = countPreviewChanges(originalFeast, cleanedPreviewFeast, language === 'uk' ? 'uk' : 'ru');
+  const resolvedFeast = cleanupComparisonEnabled && cleanupPreviewActive ? cleanedPreviewFeast : originalFeast;
   const [imageViewerOpen, setImageViewerOpen] = useState(false);
   const {width, height} = useWindowDimensions();
   const insets = useSafeAreaInsets();
@@ -203,6 +219,16 @@ export const SaintDetailScreen = ({route, navigation}) => {
   const life = (uk && resolvedFeast?.life_content_uk) || resolvedFeast?.life_content;
   const troparion = (uk && resolvedFeast?.troparion_content_uk) || resolvedFeast?.troparion_content;
   const kontakion = (uk && resolvedFeast?.kontakion_content_uk) || resolvedFeast?.kontakion_content;
+  // BLAGOVEST_HYMN_VARIANTS_20261123
+  const hymnLocalized = (key) =>
+    (language === 'uk' && resolvedFeast?.[key + '_uk']) || resolvedFeast?.[key] || '';
+  const troparionAlt = hymnLocalized('troparion_alt_content');
+  const kontakionAlt = hymnLocalized('kontakion_alt_content');
+  const troparionAltTitle = hymnLocalized('troparion_alt_title');
+  const kontakionAltTitle = hymnLocalized('kontakion_alt_title');
+  const hymnScript = (kind, value, alternative = false) =>
+    isChurchSlavonicHymn(value, hymnLocalized(kind + (alternative ? '_alt' : '') + '_script')) ? 'csl' : 'civil';
+
   const prayer = (uk && resolvedFeast?.prayer_content_uk) || resolvedFeast?.prayer_content;
   const large = width >= 560;
   const heroImageWidth = large ? 180 : Math.min(132, width * 0.34);
@@ -215,6 +241,11 @@ export const SaintDetailScreen = ({route, navigation}) => {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={[styles.content, {paddingTop: insets.top + 78, paddingBottom: 26}]}
       >
+        {cleanupComparisonEnabled && (
+          <CalendarCleanupPreviewPanel language={language}
+            active={cleanupPreviewActive} onChange={setCleanupPreviewActive}
+            stats={cleanupPreviewStats} />
+        )}
         <View style={[styles.heroCard, large && styles.heroCardWide]}>
           {!!image && (
             <Pressable onPress={() => setImageViewerOpen(true)} accessibilityRole="button"
@@ -259,7 +290,18 @@ export const SaintDetailScreen = ({route, navigation}) => {
           icon="♪"
           text={troparion}
           subtitle={resolvedFeast?.troparion_echo ? 'Глас ' + resolvedFeast.troparion_echo : resolvedFeast?.troparion_title}
-        />
+        
+          script={hymnScript('troparion', troparion)}/>
+        {!!troparionAlt && (
+          <Accordion
+            title={language === 'uk' ? 'Інший тропар' : 'Иной тропарь'}
+            feast={resolvedFeast} date={date} sourceTitle={title}
+            section="troparion_alt" icon="♪"
+            text={troparionAlt} subtitle={troparionAltTitle}
+            script={hymnScript('troparion', troparionAlt, true)}
+            focusHighlight={false}
+          />
+        )}
         <Accordion
           title="Кондак"
           feast={resolvedFeast}
@@ -270,12 +312,28 @@ export const SaintDetailScreen = ({route, navigation}) => {
           icon="✧"
           text={kontakion}
           subtitle={resolvedFeast?.kontakion_echo ? 'Глас ' + resolvedFeast.kontakion_echo : resolvedFeast?.kontakion_title}
-        />
+        
+          script={hymnScript('kontakion', kontakion)}/>
+        {!!kontakionAlt && (
+          <Accordion
+            title={language === 'uk' ? 'Інший кондак' : 'Иной кондак'}
+            feast={resolvedFeast} date={date} sourceTitle={title}
+            section="kontakion_alt" icon="✧"
+            text={kontakionAlt} subtitle={kontakionAltTitle}
+            script={hymnScript('kontakion', kontakionAlt, true)}
+            focusHighlight={false}
+          />
+        )}
         {!!prayer && <Accordion title={uk ? 'Молитва' : 'Молитва'} icon="✝" text={prayer}
           feast={resolvedFeast} date={date} sourceTitle={title} section="prayer" />}
-        {!life && !troparion && !kontakion && !prayer && (
+        {!life && !troparion && !kontakion && !troparionAlt && !kontakionAlt && !prayer && (
           <Text style={styles.empty}>
-            {uk ? 'Додаткових текстів поки немає.' : 'Дополнительных текстов пока нет.'}
+            {sharedCardLoading
+              ? (uk ? 'Завантаження відомостей...' : 'Загружаем сведения...')
+              : sharedCardNotFound
+                ? (uk ? 'Не вдалося знайти цю пам’ять. Відкрийте календар на вибрану дату.'
+                  : 'Не удалось найти эту запись. Откройте календарь на выбранную дату.')
+                : (uk ? 'Додаткових текстів поки немає.' : 'Дополнительных текстов пока нет.')}
           </Text>
         )}
       </ScrollView>
@@ -417,6 +475,8 @@ const styles = StyleSheet.create({
     fontFamily: 'serif', color: '#7A4F2D', fontSize: 14, lineHeight: 21,
     fontWeight: '700', marginBottom: 10,
   },
+  ponomarBody: {fontFamily:'Ponomar',fontSize:19,lineHeight:33,fontWeight:'400'},
+  ponomarSubtitle: {fontFamily:'Ponomar',fontSize:16,lineHeight:27,fontWeight:'400'},
   body: {
     fontFamily: 'serif', color: '#3E2A1D', fontSize: 17, lineHeight: 29,
     textAlign: 'justify', marginBottom: 12,

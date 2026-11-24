@@ -594,3 +594,71 @@ def ensure_day(target_date, language="ru", overwrite_existing=False):
         language=language,
         overwrite_existing=overwrite_existing,
     )
+
+# BLAGOVEST_HYMN_IMPORT_HOOK_20261123
+# Additive integration: retain the existing upsert function unchanged.
+# The wrapper passes already-normalized primary hymns into the old importer,
+# then persists independent alternate hymn fields if their source is safe.
+from functools import wraps as _blagovest_wraps
+from .calendar_hymn_variants import (
+    prepare_imported_hymn_fields as _blagovest_prepare_hymns,
+)
+
+_blagovest_original_upsert_feast = upsert_feast
+
+@_blagovest_wraps(_blagovest_original_upsert_feast)
+def upsert_feast(*args, **kwargs):
+    source = args[0] if args else kwargs.get("data")
+    if not isinstance(source, dict):
+        return _blagovest_original_upsert_feast(*args, **kwargs)
+
+    normalized = _blagovest_prepare_hymns(source)
+    if args:
+        feast = _blagovest_original_upsert_feast(
+            normalized, *args[1:], **kwargs
+        )
+    else:
+        forwarded = dict(kwargs)
+        forwarded["data"] = normalized
+        feast = _blagovest_original_upsert_feast(**forwarded)
+
+    if feast is None:
+        return feast
+
+    language = kwargs.get("language", args[1] if len(args) > 1 else "ru")
+    overwrite_existing = bool(
+        kwargs.get("overwrite_existing", args[2] if len(args) > 2 else False)
+    )
+    suffix = "_uk" if language == "uk" else ""
+    manually_edited = set(getattr(feast, "manually_edited_fields", []) or [])
+    changed = []
+
+    for hymn in ("troparion", "kontakion"):
+        raw_main = source.get(hymn + "_content")
+        new_main = normalized.get(hymn + "_content")
+        persisted_main = getattr(feast, hymn + "_content" + suffix, "")
+        # Do not create an alternate stanza if the original importer did
+        # not accept the normalized first stanza (e.g. manual edit, or
+        # overwrite_existing=False against a different old hymn).
+        if raw_main != new_main and persisted_main != new_main:
+            continue
+
+        for fragment in ("alt_title", "alt_content"):
+            field_name = hymn + "_" + fragment + suffix
+            value = normalized.get(hymn + "_" + fragment)
+            if not isinstance(value, str) or not value:
+                continue
+            if field_name in manually_edited:
+                continue
+            current = getattr(feast, field_name, None)
+            if current not in (None, "") and not overwrite_existing:
+                continue
+            if current == value:
+                continue
+            setattr(feast, field_name, value)
+            changed.append(field_name)
+
+    if changed:
+        feast.save(update_fields=sorted(set(changed)) + ["updated_at"])
+    return feast
+
