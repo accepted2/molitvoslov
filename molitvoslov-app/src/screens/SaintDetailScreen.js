@@ -16,7 +16,6 @@ import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
 import {getBundledCalendarIconSource} from '../data/calendarIconAssets';
 import {getCalendarCardHymns} from '../services/calendarCardPresentation';
-import {selectUocIcon} from '../services/uocIconSelection';
 import {useLanguage} from '../context/LanguageContext';
 import {isChurchSlavonicHymn} from '../services/calendarHymnDisplay';
 import {previewCleanCalendarFeast, countPreviewChanges} from '../services/calendarSourceCleanupPreview';
@@ -212,17 +211,12 @@ export const SaintDetailScreen = ({route, navigation}) => {
   const cleanupPreviewStats = countPreviewChanges(originalFeast, cleanedPreviewFeast, language === 'uk' ? 'uk' : 'ru');
   const resolvedFeast = cleanupComparisonEnabled && cleanupPreviewActive ? cleanedPreviewFeast : originalFeast;
   const [imageViewerOpen, setImageViewerOpen] = useState(false);
-  const [preferredImageFailed, setPreferredImageFailed] = useState(false);
   const {width, height} = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const uk = language === 'uk';
   const title = (uk && resolvedFeast?.title_uk) || resolvedFeast?.title || '';
   const bundled = getBundledCalendarIconSource(resolvedFeast);
-  const preferredIconUrl = selectUocIcon(resolvedFeast);
-  useEffect(() => setPreferredImageFailed(false), [preferredIconUrl]);
-  const image = preferredIconUrl && !preferredImageFailed
-    ? {uri: preferredIconUrl}
-    : bundled || (resolvedFeast?.icon_url ? {uri: resolvedFeast.icon_url} : null);
+  const image = bundled || (resolvedFeast?.icon_url ? {uri: resolvedFeast.icon_url} : null);
   const life = (uk && resolvedFeast?.life_content_uk) || resolvedFeast?.life_content;
   // Preserve the local Blagovest alternate fields and render all independently
   // reviewed canonical hymn variants, without replacing other reader features.
@@ -252,7 +246,7 @@ export const SaintDetailScreen = ({route, navigation}) => {
               accessibilityLabel={uk ? 'Збільшити ікону' : 'Увеличить икону'}>
               <Image source={image}
                 style={[styles.image, {width: heroImageWidth, height: heroImageWidth * 1.24}]}
-                resizeMode="contain" onError={() => setPreferredImageFailed(true)} />
+                resizeMode="contain" />
 
             </Pressable>
           )}

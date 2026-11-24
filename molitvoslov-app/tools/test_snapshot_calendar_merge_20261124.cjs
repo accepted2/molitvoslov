@@ -25,7 +25,9 @@ const icon = read('src/data/calendarIconAssets.js');
 for (const [name, screen] of [['Day',day],['Saint',saint]]) {
   assert.match(screen, /cardHymns\.sections\.map\(/,name+': multiple hymn sections not rendered');
   assert.match(screen, /getCalendarCardHymns\(/,name+': canonical hymn selection missing');
-  assert.match(screen, /selectUocIcon\(/,name+': curated icon selection missing');
+  // Reviewed remote icon candidates must not be activated until their
+  // corresponding WebP files are packaged locally and independently verified.
+  assert.doesNotMatch(screen, /selectUocIcon\(/,name+': remote icon selection enabled without local assets');
   assert.match(screen, /getBundledCalendarIconSource\(/,name+': offline icon fallback was lost');
   assert.match(screen, /CalendarSaveWholeButton/,name+': old save/share action was lost');
   assert.match(screen, /shareContent\(/,name+': old content sharing was lost');

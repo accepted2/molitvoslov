@@ -44,7 +44,6 @@ import {
 } from '../services/calendarOfflineStore';
 import {getBundledCalendarIconSource} from '../data/calendarIconAssets';
 import {getCalendarCardHymns, uniqueCalendarCards} from '../services/calendarCardPresentation';
-import {selectUocIcon} from '../services/uocIconSelection';
 import {colors} from '../theme';
 import {CalendarSaveWholeButton, CalendarSelectableBody, makeCalendarSaveContext} from '../components/reader/CalendarSaveText';
 import {getCalendarBibleTranslation} from '../services/bibleTranslationPreference';
@@ -185,17 +184,13 @@ const formatCalendarDateLabel = (value, locale) => {
 
 const FeastImage = ({feast}) => {
   const [failed, setFailed] = useState(false);
-  const [remoteFailed, setRemoteFailed] = useState(false);
   const [imageHeight, setImageHeight] = useState(120);
 
-  const bundledSource = getBundledCalendarIconSource(feast);
-  const preferredUrl = selectUocIcon(feast);
-  const source = preferredUrl && !remoteFailed ? {uri: preferredUrl} : bundledSource;
+  const source = getBundledCalendarIconSource(feast);
   const imageWidth = 98;
 
   useEffect(() => {
     setFailed(false);
-    setRemoteFailed(false);
 
     if (!source) {
       return;
@@ -210,7 +205,7 @@ const FeastImage = ({feast}) => {
     } else {
       setImageHeight(120);
     }
-  }, [feast?.icon_url, feast?.source_id, preferredUrl]);
+  }, [feast?.icon_url, feast?.source_id]);
 
   if (!source || failed) {
     return (
@@ -240,10 +235,7 @@ const FeastImage = ({feast}) => {
           height: imageHeight,
         },
       ]}
-      onError={() => {
-        if (preferredUrl && !remoteFailed && bundledSource) setRemoteFailed(true);
-        else setFailed(true);
-      }}
+      onError={() => setFailed(true)}
     />
   );
 };
