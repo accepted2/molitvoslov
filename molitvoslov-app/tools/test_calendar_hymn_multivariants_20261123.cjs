@@ -96,14 +96,15 @@ for(const x of examples){
     assert.equal(s.subtitle,source.heading,x.title+': independent glas/heading lost');
   }
 }
-// Real 2026 bundled OLD source ID: five hymns on the saint-detail screen.
+// Actual release-only 2026 calendar uses stable "blv-..." canonical
+// source IDs, unlike the previous 2026 package's numeric identifiers.
 const june=require('../src/data/calendar/2026-06.json');
 const feast=june.days['2026-06-05'].ru.all_feasts
-  .find(x=>x.source_id===3797);
-assert.ok(feast,'Old Euphrosyne of Polotsk source card not found');
+  .find(x=>x.source_id===examples[1].id);
+assert.ok(feast,'Bundled Euphrosyne of Polotsk source card not found');
 const legacyOutput=presenter.getCalendarCardHymns(feast,'ru');
 assert.deepEqual(Array.from(legacyOutput.sections,s=>s.title),
-  examples[1].expected,'Legacy calendar must render all 5 independent hymns');
+  examples[1].expected,'Bundled 2026 card must render all 5 independent hymns');
 const legacyCanonical=byId.get(examples[1].id);
 for(const section of legacyOutput.sections){
   const source=legacyCanonical.hymns.find(row=>
