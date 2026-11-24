@@ -29,6 +29,9 @@ jobs:
       - name: Verify repaired subsets and preserve extra variants
         working-directory: molitvoslov-app
         run: node tools/test_uoc_210_integrated.cjs
+      - name: Verify all packaged WebP, deduplication and no HTTP icon fallback
+        working-directory: molitvoslov-app
+        run: node tools/test_blagovist_offline_icons_20261124.cjs
 
   snapshot-compatibility:
     name: Snapshot functionality and JSX syntax
