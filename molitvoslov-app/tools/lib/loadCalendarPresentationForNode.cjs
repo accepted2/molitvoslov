@@ -58,7 +58,11 @@ function loadCalendarPresentationForNode(root) {
 
   let presenterSource=source('presenter');
   presenterSource=removeImport(presenterSource,'calendarCivicDecoder');
-  presenterSource=removeImport(presenterSource,'uocIconSelection');
+  // Current app uses bundled local assets; the presentation module no longer
+  // imports network icon candidates. Older calendar branches still can.
+  if (/from\s*['"]\.\/uocIconSelection['"]/.test(presenterSource)) {
+    presenterSource=removeImport(presenterSource,'uocIconSelection');
+  }
   assert.equal((presenterSource.match(/^export[ \t]+const /gm)||[]).length,2,
     'Calendar card presentation exports changed');
   presenterSource=presenterSource.replace(/^export[ \t]+const /gm,'const ') +
