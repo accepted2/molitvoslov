@@ -40,9 +40,12 @@ const normalize = value => String(value || '').normalize('NFC').toLowerCase()
   .replace(/\([^)]*(?:\d{1,4}|век|столет|близько)[^)]*\)/g, '')
   .replace(/[^a-zа-я0-9]+/g, ' ').trim();
 const isHttps = url => typeof url === 'string' && /^https:\/\//i.test(url);
-const sourceId = card => String(
-  card?.card_id || card?.blagovist_card_id || card?.canonical_card_id || ''
-);
+const sourceId = card => {
+  const source = typeof card?.source_id === 'string' ? card.source_id.trim() : '';
+  const fromSource = /^blv-[a-z0-9-]+$/i.test(source) ? source : '';
+  return String(card?.card_id || card?.blagovist_card_id ||
+    card?.canonical_card_id || fromSource || '');
+};
 for (const [cardId, titleRu, titleUk, url] of curated.items) {
   curatedById.set(cardId, url);
   for (const title of [titleRu, titleUk]) {
