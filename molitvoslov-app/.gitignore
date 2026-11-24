@@ -35,3 +35,6 @@ keystore.properties
 credentials.json
 *.jks
 *.p12
+
+# Lossless generated calendar modules; Metro regenerates from tracked source JSON.
+/src/data/calendar-packed/

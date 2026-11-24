@@ -51,6 +51,9 @@ jobs:
       - name: Install JS dependencies without native hooks
         working-directory: molitvoslov-app
         run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Pack and verify all calendar months without text loss
+        working-directory: molitvoslov-app
+        run: node scripts/pack-calendar-for-metro.js --verify
       - name: Parse JSX and protect prior reading, sharing and icon features
         working-directory: molitvoslov-app
         run: node tools/test_snapshot_calendar_merge_20261124.cjs

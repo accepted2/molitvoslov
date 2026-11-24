@@ -8,46 +8,47 @@ import {
 } from './calendarYearMarkers';
 
 const {unpackCalendarMonth} = require('./calendarMonthCodec');
+const {decodePackedMonth} = require('./calendarPackedMonth');
 
 const STORAGE_PREFIX = 'calendar-day-v3';
 
 const bundledMonthLoaders = {
-  '2025-01': () => require('../data/calendar/2025-01.json'),
-  '2025-02': () => require('../data/calendar/2025-02.json'),
-  '2025-03': () => require('../data/calendar/2025-03.json'),
-  '2025-04': () => require('../data/calendar/2025-04.json'),
-  '2025-05': () => require('../data/calendar/2025-05.json'),
-  '2025-06': () => require('../data/calendar/2025-06.json'),
-  '2025-07': () => require('../data/calendar/2025-07.json'),
-  '2025-08': () => require('../data/calendar/2025-08.json'),
-  '2025-09': () => require('../data/calendar/2025-09.json'),
-  '2025-10': () => require('../data/calendar/2025-10.json'),
-  '2025-11': () => require('../data/calendar/2025-11.json'),
-  '2025-12': () => require('../data/calendar/2025-12.json'),
-  '2026-01': () => require('../data/calendar/2026-01.json'),
-  '2026-02': () => require('../data/calendar/2026-02.json'),
-  '2026-03': () => require('../data/calendar/2026-03.json'),
-  '2026-04': () => require('../data/calendar/2026-04.json'),
-  '2026-05': () => require('../data/calendar/2026-05.json'),
-  '2026-06': () => require('../data/calendar/2026-06.json'),
-  '2026-07': () => require('../data/calendar/2026-07.json'),
-  '2026-08': () => require('../data/calendar/2026-08.json'),
-  '2026-09': () => require('../data/calendar/2026-09.json'),
-  '2026-10': () => require('../data/calendar/2026-10.json'),
-  '2026-11': () => require('../data/calendar/2026-11.json'),
-  '2026-12': () => require('../data/calendar/2026-12.json'),
-  '2027-01': () => require('../data/calendar/2027-01.json'),
-  '2027-02': () => require('../data/calendar/2027-02.json'),
-  '2027-03': () => require('../data/calendar/2027-03.json'),
-  '2027-04': () => require('../data/calendar/2027-04.json'),
-  '2027-05': () => require('../data/calendar/2027-05.json'),
-  '2027-06': () => require('../data/calendar/2027-06.json'),
-  '2027-07': () => require('../data/calendar/2027-07.json'),
-  '2027-08': () => require('../data/calendar/2027-08.json'),
-  '2027-09': () => require('../data/calendar/2027-09.json'),
-  '2027-10': () => require('../data/calendar/2027-10.json'),
-  '2027-11': () => require('../data/calendar/2027-11.json'),
-  '2027-12': () => require('../data/calendar/2027-12.json'),
+  '2025-01': () => require('../data/calendar-packed/2025-01.json'),
+  '2025-02': () => require('../data/calendar-packed/2025-02.json'),
+  '2025-03': () => require('../data/calendar-packed/2025-03.json'),
+  '2025-04': () => require('../data/calendar-packed/2025-04.json'),
+  '2025-05': () => require('../data/calendar-packed/2025-05.json'),
+  '2025-06': () => require('../data/calendar-packed/2025-06.json'),
+  '2025-07': () => require('../data/calendar-packed/2025-07.json'),
+  '2025-08': () => require('../data/calendar-packed/2025-08.json'),
+  '2025-09': () => require('../data/calendar-packed/2025-09.json'),
+  '2025-10': () => require('../data/calendar-packed/2025-10.json'),
+  '2025-11': () => require('../data/calendar-packed/2025-11.json'),
+  '2025-12': () => require('../data/calendar-packed/2025-12.json'),
+  '2026-01': () => require('../data/calendar-packed/2026-01.json'),
+  '2026-02': () => require('../data/calendar-packed/2026-02.json'),
+  '2026-03': () => require('../data/calendar-packed/2026-03.json'),
+  '2026-04': () => require('../data/calendar-packed/2026-04.json'),
+  '2026-05': () => require('../data/calendar-packed/2026-05.json'),
+  '2026-06': () => require('../data/calendar-packed/2026-06.json'),
+  '2026-07': () => require('../data/calendar-packed/2026-07.json'),
+  '2026-08': () => require('../data/calendar-packed/2026-08.json'),
+  '2026-09': () => require('../data/calendar-packed/2026-09.json'),
+  '2026-10': () => require('../data/calendar-packed/2026-10.json'),
+  '2026-11': () => require('../data/calendar-packed/2026-11.json'),
+  '2026-12': () => require('../data/calendar-packed/2026-12.json'),
+  '2027-01': () => require('../data/calendar-packed/2027-01.json'),
+  '2027-02': () => require('../data/calendar-packed/2027-02.json'),
+  '2027-03': () => require('../data/calendar-packed/2027-03.json'),
+  '2027-04': () => require('../data/calendar-packed/2027-04.json'),
+  '2027-05': () => require('../data/calendar-packed/2027-05.json'),
+  '2027-06': () => require('../data/calendar-packed/2027-06.json'),
+  '2027-07': () => require('../data/calendar-packed/2027-07.json'),
+  '2027-08': () => require('../data/calendar-packed/2027-08.json'),
+  '2027-09': () => require('../data/calendar-packed/2027-09.json'),
+  '2027-10': () => require('../data/calendar-packed/2027-10.json'),
+  '2027-11': () => require('../data/calendar-packed/2027-11.json'),
+  '2027-12': () => require('../data/calendar-packed/2027-12.json'),
 };
 
 const bundledMonthCache = new Map();
@@ -56,7 +57,10 @@ const getBundledMonthPayload = (year, month) => {
   const key = `${Number(year)}-${String(Number(month)).padStart(2, '0')}`;
 
   if (bundledMonthCache.has(key)) {
-    return bundledMonthCache.get(key);
+    const cached = bundledMonthCache.get(key);
+    bundledMonthCache.delete(key);
+    bundledMonthCache.set(key, cached);
+    return cached;
   }
 
   const loader = bundledMonthLoaders[key];
@@ -67,8 +71,11 @@ const getBundledMonthPayload = (year, month) => {
 
   // Lossless on-demand expansion: the release can package large ru/uk
   // saint texts once. Old uncompressed snapshots remain supported.
-  const payload = unpackCalendarMonth(loader());
+  const payload = unpackCalendarMonth(decodePackedMonth(loader()));
   bundledMonthCache.set(key, payload);
+  while (bundledMonthCache.size > 2) {
+    bundledMonthCache.delete(bundledMonthCache.keys().next().value);
+  }
 
   return payload;
 };
