@@ -121,10 +121,10 @@ const homonymGuard = presenter.getCalendarCardHymns({
 assert.equal(homonymGuard.sections.length,0,
   'An unrelated legacy numeric source ID must not transplant other hymns');
 const december = require('../src/data/calendar/2026-12.json');
-const nicholas = december.days['2026-12-19'].ru.all_feasts
+const nicholasDecember = december.days['2026-12-19'].ru.all_feasts
   .find(f => f.source_id==='blv-839dc39617bdf40503d594dd');
-assert.ok(nicholas,'Canonical Nicholas of Myra feast missing on December 19');
-const nicholasHymns = presenter.getCalendarCardHymns(nicholas,'ru');
+assert.ok(nicholasDecember,'Canonical Nicholas of Myra feast missing on December 19');
+const nicholasHymns = presenter.getCalendarCardHymns(nicholasDecember,'ru');
 assert.ok(nicholasHymns.sections.some(x=>x.kind==='troparion'));
 assert.ok(nicholasHymns.sections.some(x=>x.kind==='kontakion'));
 assert.equal(presenter.getCalendarCardHymns({
