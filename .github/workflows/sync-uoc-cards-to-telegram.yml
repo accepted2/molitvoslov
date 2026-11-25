@@ -1,0 +1,105 @@
+name: Sync Molitvoslov UOC cards to private bot release
+
+on:
+  push:
+    branches:
+      - integration/snapshot-calendar-20261124
+    paths:
+      - 'molitvoslov-app/src/data/calendar/20??-??.json'
+  workflow_dispatch:
+    inputs:
+      base_ref:
+        description: 'Earlier Molitvoslov commit SHA to compare (empty = HEAD^)'
+        required: false
+        default: 'HEAD^'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: molitvoslov-to-telegram-uoc
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      BOT_TOKEN: ${{ secrets.BOT_RELEASE_WRITE_TOKEN }}
+    steps:
+      - name: Check cross-repository authorization
+        if: env.BOT_TOKEN == ''
+        run: |
+          echo '::notice::BOT_RELEASE_WRITE_TOKEN is not configured. No release changes.'
+          echo 'Set a fine-grained token restricted to accepted2/orthodox-telegram-bot with Contents Read/Write to enable private-only sync.'
+      - name: Checkout Molitvoslov source and historical months
+        if: env.BOT_TOKEN != ''
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Checkout bot sync code (draft integration branch)
+        if: env.BOT_TOKEN != ''
+        uses: actions/checkout@v4
+        with:
+          repository: accepted2/orthodox-telegram-bot
+          ref: integration/uk-daily-preflight-safe-20261124
+          token: ${{ secrets.BOT_RELEASE_WRITE_TOKEN }}
+          path: bot
+      - name: Setup Python
+        if: env.BOT_TOKEN != ''
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install bot test dependencies
+        if: env.BOT_TOKEN != ''
+        working-directory: bot
+        run: python -m pip install -r requirements.txt
+      - name: Download existing private SQLite assets
+        if: env.BOT_TOKEN != ''
+        env:
+          GH_TOKEN: ${{ secrets.BOT_RELEASE_WRITE_TOKEN }}
+        run: |
+          mkdir -p bot-source
+          gh release download bot-data-v1 --repo accepted2/orthodox-telegram-bot --dir bot-source --pattern 'uoc_calendar_2025_2027.sqlite3'
+          gh release download bot-data-v1 --repo accepted2/orthodox-telegram-bot --dir bot-source --pattern 'bot_content.sqlite3'
+      - name: Apply only verified changed Molitvoslov card IDs
+        if: env.BOT_TOKEN != ''
+        env:
+          SOURCE_BASE: ${{ github.event_name == 'push' && github.event.before || inputs.base_ref || 'HEAD^' }}
+        run: |
+          mkdir -p bot-output
+          cd bot
+          python tools/sync_molitvoslov_cards.py \
+            --app-dir "$GITHUB_WORKSPACE/molitvoslov-app/src/data/calendar" \
+            --app-repo "$GITHUB_WORKSPACE" \
+            --base-ref "$SOURCE_BASE" \
+            --uoc-db "$GITHUB_WORKSPACE/bot-source/uoc_calendar_2025_2027.sqlite3" \
+            --output "$GITHUB_WORKSPACE/bot-output/uoc_calendar_2025_2027.sqlite3" \
+            --report "$GITHUB_WORKSPACE/bot-output/sync-report.json" --apply
+      - name: Test new bot catalogue
+        if: env.BOT_TOKEN != ''
+        working-directory: bot
+        run: python -m unittest discover -s tests
+      - name: Audit all 1095 dates before any upload
+        if: env.BOT_TOKEN != ''
+        working-directory: bot
+        run: |
+          if [ -f "$GITHUB_WORKSPACE/bot-output/uoc_calendar_2025_2027.sqlite3" ]; then
+            python tools/audit_uoc_daily_20261124.py \
+              --uoc-db "$GITHUB_WORKSPACE/bot-output/uoc_calendar_2025_2027.sqlite3" \
+              --bot-db "$GITHUB_WORKSPACE/bot-source/bot_content.sqlite3" \
+              --output "$GITHUB_WORKSPACE/bot-output/audit-1095.json"
+          else
+            echo 'No edited cards compared with base. Nothing to upload.'
+          fi
+      - name: Upload tested catalogue to PRIVATE release only
+        if: env.BOT_TOKEN != ''
+        env:
+          GH_TOKEN: ${{ secrets.BOT_RELEASE_WRITE_TOKEN }}
+        run: |
+          if [ -f bot-output/uoc_calendar_2025_2027.sqlite3 ]; then
+            gh release upload bot-data-v1 bot-output/uoc_calendar_2025_2027.sqlite3 --clobber --repo accepted2/orthodox-telegram-bot
+            echo 'Private release updated; running Render NOT redeployed.' >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo 'No source card differences; existing private Release unchanged.' >> "$GITHUB_STEP_SUMMARY"
+          fi
